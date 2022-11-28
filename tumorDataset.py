@@ -44,6 +44,7 @@ class TumorDataset(Dataset):
         
         with h5py.File(path, 'r') as f:
             result=np.array(f['cjdata'][field])
+        
         if field == 'image':
             # scale to range 0~1
             result.astype('uint8')
