@@ -10,11 +10,11 @@ def train(model: cUNet,
           batch_size: int, 
           train_loader: DataLoader, 
           optimizer: torch.optim.Optimizer, 
-          cls_criterion: function, 
-          seg_criterion: function, 
+          cls_loss: function, 
+          seg_loss: function, 
           epoch: int):
     '''
-    one epoch training process, containing
+    one epoch training process, containing: forwarding, calculating loss value, back propagation, printing some of the training progress
     '''
     pass
 
@@ -22,7 +22,7 @@ def test(model: cUNet,
          device: torch.device, 
          test_loader: DataLoader):
     '''
-    testing the accuracy of current partly-trained model
+    testing the accuracy of current partly-trained model and print
     '''
     pass
 
@@ -31,13 +31,17 @@ def main():
     epochs=10
     model=cUNet()
     device=torch.device('cude:0' if torch.cuda.is_available() else 'cpu')
+    transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.3, ), (0.8, ))])
     train_dataset=TumorDataset(dataset_dir='./dataset/', train=True)
-    train_loader=DataLoader(train_dataset, shuffle=True, batch_size=batch_size, transform=transforms.ToTensor)
+    train_loader=DataLoader(train_dataset, shuffle=True, batch_size=batch_size, transform=transform)
     test_dataset=TumorDataset(dataset_dir='./dataset/', train=False)
-    test_loader=DataLoader(test_dataset, shuffle=False, batch_size=batch_size, transform=transforms.ToTensor)
+    test_loader=DataLoader(test_dataset, shuffle=False, batch_size=batch_size, transform=transform)
+    criterion=torch.nn.CrossEntropyLoss()
+    optimizer=torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.5)
+
     for epoch in range(epochs):
-        train()
-        test()
+        train(model, device, batch_size, train_loader, optimizer, criterion, dice_loss, epoch)
+        test(model, device, test_loader)
 
 if __name__ == '__main__':
     main()
