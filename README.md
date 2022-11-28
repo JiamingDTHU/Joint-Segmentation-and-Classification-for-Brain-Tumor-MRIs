@@ -32,7 +32,7 @@ Email: chengjun583@qq.com
  2. After we complete task 1, we will modify our networks to try to achieve higher prediction performance 
 
 # Todo List
-- [ ] Data loading module
+- [x] Data loading module
 - [ ] Network definition
 - [ ] Loss function definition
 - [ ] Training and evaluation function definition
