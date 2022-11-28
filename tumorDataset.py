@@ -23,9 +23,9 @@ class TumorDataset(Dataset):
         assert idx in range(1, 3065), 'index out of range: 1~3064'
         
         if self.train:
-            path=self.dataset_dir+'/training/'+f'{idx}.mat'
+            path=self.dataset_dir+'training/'+f'{idx}.mat'
         else:
-            path=self.dataset_dir+'/testing/'+f'{idx}.mat'
+            path=self.dataset_dir+'testing/'+f'{idx}.mat'
         image=self.load(path, 'image')
         mask=self.load(path, 'mask')
         label=self.load(path, 'label')
