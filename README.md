@@ -34,7 +34,7 @@ Email: chengjun583@qq.com
 ## Todo List
 - [x] Data loading module
 - [ ] Network definition
-- [ ] Loss function definition
+- [x] Loss function definition
 - [ ] Training and evaluation function definition
 - [ ] Main process (training and evaluation)
 
