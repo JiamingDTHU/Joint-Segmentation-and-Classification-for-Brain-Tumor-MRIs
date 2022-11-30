@@ -67,7 +67,19 @@ def train(model,traindataloader,train_rate,criterion,optimizer,num_epochs=25):
               'train_acc_all':train_acc_all,
               'val_acc_all':val_acc_all})
     return model,train_process
-def cUNet():
-    It=[]
+
 optimizer=torch.optim.Adam(cUNet.parameters(),lr=0.0003)
 cUNet,train_process=train(cUNet,train_loader,0.8,criterion,optimizer,num_epochs=25)
+import matplotlib.pyplot as plt
+plt.figure(figsize=(12,4))
+plt.subplot(1,2,1)
+plt.plot(train_process.epoch,train_process.train_loss_all,'ro-',label='Train loss')
+plt.plot(train_process.epoch,train_process.val_loss_all,'bs-',label='Val loss')
+plt.legend()
+plt.xlabel('epoch')
+plt.ylabel('loss')
+plt.subplot(1,2,2)
+plt.plot(train_process.epoch,train_process.train_acc_all,'ro-',label='Train acc')
+plt.plot(train_process.epoch,train_process.val_acc_all,'bs-',label='Val acc')
+plt.xlabel('epoch')
+plt.ylabel('loss')
