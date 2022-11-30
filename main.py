@@ -4,6 +4,7 @@ from dice_score import *
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from tumorDataset import *
+from train import *
 
 def train(model: cUNet, 
           device: torch.device, 
@@ -37,11 +38,26 @@ def main():
     test_dataset=TumorDataset(dataset_dir='./dataset/', train=False)
     test_loader=DataLoader(test_dataset, shuffle=False, batch_size=batch_size, transform=transform)
     criterion=torch.nn.CrossEntropyLoss()
-    optimizer=torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.5)
+    # optimizer=torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.5)
 
-    for epoch in range(epochs):
-        train(model, device, batch_size, train_loader, optimizer, criterion, dice_loss, epoch)
-        test(model, device, test_loader)
+    # for epoch in range(epochs):
+        # train(model, device, batch_size, train_loader, optimizer, criterion, dice_loss, epoch)
+        # test(model, device, test_loader)
+    optimizer=torch.optim.Adam(cUNet.parameters(),lr=0.0003)
+    cUNet,train_process=train_eval(cUNet,train_loader,0.8,criterion,optimizer,num_epochs=3)
+    import matplotlib.pyplot as plt
+    plt.figure(figsize=(12,4))
+    plt.subplot(1,2,1)
+    plt.plot(train_process.epoch,train_process.train_loss_all,'ro-',label='Train loss')
+    plt.plot(train_process.epoch,train_process.val_loss_all,'bs-',label='Val loss')
+    plt.legend()
+    plt.xlabel('epoch')
+    plt.ylabel('loss')
+    plt.subplot(1,2,2)
+    plt.plot(train_process.epoch,train_process.train_acc_all,'ro-',label='Train acc')
+    plt.plot(train_process.epoch,train_process.val_acc_all,'bs-',label='Val acc')
+    plt.xlabel('epoch')
+    plt.ylabel('loss')
 
 if __name__ == '__main__':
     main()

@@ -9,7 +9,9 @@ import torch.nn as nn
 import copy
 import time
 import pandas as pd
-def train(model,traindataloader,train_rate,criterion,optimizer,num_epochs=25):
+from Net import *
+from dice_score import *
+def train_eval(model,traindataloader,train_rate,criterion,optimizer,num_epochs=25):
     batch_num=len(traindataloader)
     train_batch_num=round(batch_num*train_rate)
     best_model_wts=copy.deepcopy(model.state_dict())
@@ -49,7 +51,7 @@ def train(model,traindataloader,train_rate,criterion,optimizer,num_epochs=25):
                val_loss +=loss.item()*b_x.size(0)
         train_loss_all.append(train_loss/train_num)
         val_loss_all.append(val_loss/val_num)
-        train_acc_all=()#这里的预测准确率函数用dice，还没写入，其他朋友可以填入
+        train_acc_all.append(dice_coeff(b_x, output)) # dice系数函数在dice_score文件里
         val_acc_all=()
         
         print('{}Train Loss:{:.4f} Train Acc:{:.4f}'.format(epoch,train_loss_all[-1],train_acc_all[-1]))
@@ -69,7 +71,7 @@ def train(model,traindataloader,train_rate,criterion,optimizer,num_epochs=25):
     return model,train_process
 
 optimizer=torch.optim.Adam(cUNet.parameters(),lr=0.0003)
-cUNet,train_process=train(cUNet,train_loader,0.8,criterion,optimizer,num_epochs=25)
+cUNet,train_process=train_eval(cUNet,train_loader,0.8,criterion,optimizer,num_epochs=25)
 import matplotlib.pyplot as plt
 plt.figure(figsize=(12,4))
 plt.subplot(1,2,1)
