@@ -63,10 +63,10 @@ def main():
     epochs=10
     model=cUNet()
     device=torch.device('cude:0' if torch.cuda.is_available() else 'cpu')
-    transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.3, ), (0.8, ))])
-    train_dataset=TumorDataset(dataset_dir='./dataset/', train=True, transform=transform)
+    # transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.3, ), (0.8, ))])
+    train_dataset=TumorDataset(dataset_dir='./dataset/', train=True)
     train_loader=DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
-    test_dataset=TumorDataset(dataset_dir='./dataset/', train=False, transform=transform)
+    test_dataset=TumorDataset(dataset_dir='./dataset/', train=False)
     test_loader=DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
     criterion=torch.nn.CrossEntropyLoss()
     optimizer=torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.5)
