@@ -10,7 +10,7 @@ def train(model: cUNet,
           batch_size: int, 
           train_loader: DataLoader, 
           optimizer: torch.optim.Optimizer, 
-          cls_loss: function, 
+          cls_loss: torch.nn.Module, 
           seg_loss: function, 
           epoch: int):
     '''
