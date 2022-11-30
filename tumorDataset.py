@@ -27,14 +27,14 @@ class TumorDataset(Dataset):
         else:
             path=self.dataset_dir+'testing/'+f'{idx}.mat'
         image=self.load(path, 'image')
-        mask=self.load(path, 'mask')
+        mask=self.load(path, 'tumorMask')
         label=self.load(path, 'label')
         
-        return {
-            'image': torch.as_tensor(image.copy()).float(), 
-            'mask': torch.as_tensor(mask.copy()).int(), 
-            'label': torch.as_tensor(label.copy()).int()
-        }
+        return (
+            torch.as_tensor(image.copy()).float(), 
+            torch.as_tensor(mask.copy()).int(), 
+            torch.as_tensor(label).int()
+        )
         
     @staticmethod
     def load(path, field):
@@ -47,8 +47,9 @@ class TumorDataset(Dataset):
         
         if field == 'image':
             # scale to range 0~1
-            result.astype('uint8')
-            result /= 256
+            temp=result.copy()
+            temp[temp>=256]=255
+            result = temp/256.
         elif field == 'label':
             result = int(result[0][0])
         
