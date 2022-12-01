@@ -73,7 +73,7 @@ def main():
     optimizer=torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.5)
 
     for epoch in range(epochs):
-        # train(model, device, batch_size, train_loader, optimizer, criterion, dice_loss, epoch)
+        train(model, device, batch_size, train_loader, optimizer, criterion, dice_loss, epoch)
         test(model, device, test_loader)
 
 if __name__ == '__main__':
