@@ -84,7 +84,7 @@ class cUNet(torch.nn.Module):
         concat4 = torch.cat([convt4,conv1],dim=1) # size(8, 32, 512, 512)
         conv9 = self.decode_flat4(concat4) # sie(8, 16, 512, 512)
         
-        output1 = self.l1(conv5[:, 0, :, :].view(8, 1024))  # classification branch
+        output1 = self.l1(conv5[:, 0, :, :].view(-1, 1024))  # classification branch
         output2 = self.decode_flat5(conv9) # segmentation branch
         
         return output1, output2

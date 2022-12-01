@@ -49,12 +49,12 @@ def test(model: cUNet,
         for data in test_loader:
             images, targets, labels=data
             images, targets, labels=images.to(device), targets.to(device), labels.to(device)
-            outputs=model(images)
-            _, predicted=torch.max(outputs.data, dim=1)
+            outputs1, outputs2=model(images)
+            _, predicted=torch.max(outputs1.data, dim=1)
             total+=labels.size(0)
             correct+=(predicted==labels).sum().item()
-            total_dice+=dice_coeff(images, targets)
-    print('accuracy on test set: {}\ndice score{}%'.format(100*correct/total, total_dice/total))
+            total_dice+=dice_coeff(outputs2[:, 0], targets)
+    print('accuracy on test set: {}\naverage dice score{}%'.format(100*correct/total, total_dice/total))
     
     return
 
@@ -73,7 +73,7 @@ def main():
     optimizer=torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.5)
 
     for epoch in range(epochs):
-        train(model, device, batch_size, train_loader, optimizer, criterion, dice_loss, epoch)
+        # train(model, device, batch_size, train_loader, optimizer, criterion, dice_loss, epoch)
         test(model, device, test_loader)
 
 if __name__ == '__main__':
