@@ -1,11 +1,13 @@
 import numpy as np
 import torch
 from torch.utils.data import Dataset
+from torchvision import transforms
 import h5py
 
 class TumorDataset(Dataset):
-    def __init__(self, dataset_dir: str = './dataset/', train: bool = True):
+    def __init__(self, dataset_dir: str = './dataset/', train: bool = True, transform: transforms = None):
         self.dataset_dir=dataset_dir
+        self.transform=transform
         self.train=train
         
 
@@ -29,11 +31,13 @@ class TumorDataset(Dataset):
         image=self.load(path, 'image')
         mask=self.load(path, 'tumorMask')
         label=self.load(path, 'label')
+        if self.transform:
+            image=self.transform(image)
         
         return (
-            torch.as_tensor(image.copy()).float(), 
-            torch.as_tensor(mask.copy()).int(), 
-            torch.as_tensor(label).int()
+            torch.as_tensor(image).float(), 
+            torch.as_tensor(mask).float(), 
+            torch.as_tensor(label-1).long()
         )
         
     @staticmethod
