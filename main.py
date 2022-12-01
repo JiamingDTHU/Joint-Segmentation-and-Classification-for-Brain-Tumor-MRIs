@@ -24,9 +24,10 @@ def train(model: cUNet,
         outputs1, outputs2=model(inputs)
         l1=criterion1(outputs1, labels) # loss of classification
         l2=criterion2(outputs2[:, 0], targets) # loss of segmentation
+        print(type(l1), type(l2))
         s1=np.random.randn()
         s2=np.random.randn()
-        loss=l1/(2*s1**2)+l2/(2*s2**2)+np.log(s1*s2) # calculate Multi-task loss
+        loss=(l1+l2)/2 # calculate Multi-task loss
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
         
@@ -63,6 +64,7 @@ def main():
     epochs=10
     model=cUNet()
     device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
     transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1402, ), (0.8402, ))])
     train_dataset=TumorDataset(dataset_dir='./dataset/', train=True, transform=transform)
     train_loader=DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
