@@ -33,10 +33,11 @@ Email: chengjun583@qq.com
 
 ## Todo List
 - [x] Data loading module
-- [ ] Network definition
+- [x] Network definition
 - [x] Loss function definition
-- [ ] Training and evaluation function definition
-- [ ] Main process (training and evaluation)
+- [x] Training and evaluation function definition
+- [x] Main process (training and evaluation)
+- [ ] Debug and optimization
 
 
 [^01]:Simultaneous Segmentation and Classification of Bone Surfaces from Ultrasound Using a Multi-feature Guided CNN. Wang, P et al
