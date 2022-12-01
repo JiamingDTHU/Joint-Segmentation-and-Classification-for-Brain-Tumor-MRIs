@@ -24,7 +24,6 @@ def train(model: cUNet,
         outputs1, outputs2=model(inputs)
         l1=criterion1(outputs1, labels) # loss of classification
         l2=criterion2(outputs2[:, 0], targets) # loss of segmentation
-        print(type(l1), type(l2))
         s1=np.random.randn()
         s2=np.random.randn()
         loss=(l1+l2)/2 # calculate Multi-task loss
