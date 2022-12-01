@@ -3,6 +3,7 @@ import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
 import h5py
+from utils import *
 
 class TumorDataset(Dataset):
     def __init__(self, dataset_dir: str = './dataset/', train: bool = True, transform: transforms = None):
@@ -51,6 +52,8 @@ class TumorDataset(Dataset):
         
         if field == 'image':
             # scale to range 0~1
+            if result.shape == (256, 256):
+                result=interpolation(result, (512, 512))
             temp=result.copy()
             temp[temp>=256]=255
             result = temp/256.
