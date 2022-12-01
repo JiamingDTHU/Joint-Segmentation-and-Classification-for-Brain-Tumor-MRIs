@@ -16,7 +16,7 @@ class TumorDataset(Dataset):
     def __len__(self):
         '''90% training set and 10% testing set'''
         if self.train:
-            return 2757
+            return 2742
         else:
             return 307
         
@@ -24,7 +24,7 @@ class TumorDataset(Dataset):
     def __getitem__(self, idx):
         '''Get data from dataset and return its image, mask and label fields'''
         
-        assert idx in range(1, 3065), 'index out of range: 1~3064'
+        assert idx in range(1, 3065) and idx not in [955, 956, 957, 1070, 1071, 1072, 1073, 1074, 1075, 1076, 1203, 1204, 1205, 1206, 1207], 'index out of range: 1~3064'
         
         if self.train:
             path=self.dataset_dir+'training/'+f'{idx}.mat'
@@ -53,8 +53,6 @@ class TumorDataset(Dataset):
         
         if field == 'image':
             # scale to range 0~1
-            if result.shape == (256, 256):
-                result=cv2.resize(result, (512, 512), interpolation=cv2.INTER_CUBIC)
             temp=result.copy()
             temp[temp>=256]=255
             result = temp/256.
