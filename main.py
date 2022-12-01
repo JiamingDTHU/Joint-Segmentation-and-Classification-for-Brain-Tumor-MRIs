@@ -62,7 +62,7 @@ def main():
     batch_size=8
     epochs=10
     model=cUNet()
-    device=torch.device('cude:0' if torch.cuda.is_available() else 'cpu')
+    device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1402, ), (0.8402, ))])
     train_dataset=TumorDataset(dataset_dir='./dataset/', train=True, transform=transform)
     train_loader=DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
