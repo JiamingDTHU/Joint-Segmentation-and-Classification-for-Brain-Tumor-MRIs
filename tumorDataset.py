@@ -5,7 +5,6 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 import h5py
 from utils import *
-import cv2
 
 class TumorDataset(Dataset):
     def __init__(self, dataset_dir: str = './dataset/', train: bool = True, transform: transforms = None):
