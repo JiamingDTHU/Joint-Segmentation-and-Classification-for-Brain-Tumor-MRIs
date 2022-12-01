@@ -52,15 +52,15 @@ def test(model: cUNet,
             outputs1, outputs2=model(images)
             _, predicted=torch.max(outputs1.data, dim=1)
             total+=labels.size(0)
-            correct+=(predicted==labels).sum().item()
+            correct+=(predicted-labels<1e-6).sum().item()
             total_dice+=dice_coeff(outputs2[:, 0], targets)
-    print('accuracy on test set: {}\naverage dice score{}%'.format(100*correct/total, total_dice/total))
+    print('accuracy on test set: {}%\naverage dice score: {}'.format(100*correct/total, total_dice/total))
     
     return
 
 def main():
     batch_size=8
-    epochs=1
+    epochs=3
     model=cUNet()
     device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
