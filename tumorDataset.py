@@ -31,10 +31,6 @@ class TumorDataset(Dataset):
             except:
                 pass
         path=self.dataset_dir+name_list[idx]
-        # if self.train:
-        #     path=self.dataset_dir+'training/'+f'{idx}.mat'
-        # else:
-        #     path=self.dataset_dir+'testing/'+f'{idx}.mat'
         image=self.load(path, 'image')
         mask=self.load(path, 'tumorMask')
         label=self.load(path, 'label')
