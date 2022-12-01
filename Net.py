@@ -41,10 +41,7 @@ class cUNet(torch.nn.Module):
         self.encode_flat3=double_conv2d_bn(32, 64)
         self.encode_flat4=double_conv2d_bn(64, 128)
         self.encode_flat5=double_conv2d_bn(128, 256)
-        self.l1=torch.nn.Linear(1024, 512)
-        self.l2=torch.nn.Linear(512, 256)
-        self.l3=torch.nn.Linear(256, 64)
-        self.l4=torch.nn.Linear(64, 3)
+        self.l1=torch.nn.Linear(1024, 3)
         self.decode_flat1=double_conv2d_bn(256, 128)
         self.decode_flat2=double_conv2d_bn(128, 64)
         self.decode_flat3=double_conv2d_bn(64, 32)
@@ -87,7 +84,7 @@ class cUNet(torch.nn.Module):
         concat4 = torch.cat([convt4,conv1],dim=1) # size(8, 32, 512, 512)
         conv9 = self.decode_flat4(concat4) # sie(8, 16, 512, 512)
         
-        output1 = self.l4(F.relu(self.l3(F.relu(self.l2(F.relu(self.l1(conv5[:, 0, :, :].view(8, 1024))))))))  # classification branch
+        output1 = self.l1(conv5[:, 0, :, :].view(8, 1024))  # classification branch
         output2 = self.decode_flat5(conv9) # segmentation branch
         
         return output1, output2
