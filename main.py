@@ -31,8 +31,8 @@ def train(model: cUNet,
         optimizer.step() # update parameters
         
         running_loss+=loss.item() # sum of total loss
-        if batch_idx % 300 == 299:
-            print('第{}轮次已训练{}批样本, 本批次平均loss值: {}'.format(epoch+1, batch_idx+1, running_loss/300))
+        if batch_idx % 50 == 49:
+            print('第{}轮次已训练{}批样本, 本批次平均loss值: {}'.format(epoch+1, batch_idx+1, running_loss/50))
             running_loss=0.
     return
 
