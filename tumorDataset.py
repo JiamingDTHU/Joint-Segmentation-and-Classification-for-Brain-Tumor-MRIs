@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import torch
 from torch.utils.data import Dataset
@@ -23,13 +24,17 @@ class TumorDataset(Dataset):
 
     def __getitem__(self, idx):
         '''Get data from dataset and return its image, mask and label fields'''
-        
-        assert idx in range(1, 3065) and idx not in [955, 956, 957, 1070, 1071, 1072, 1073, 1074, 1075, 1076, 1203, 1204, 1205, 1206, 1207], 'index out of range: 1~3064'
-        
-        if self.train:
-            path=self.dataset_dir+'training/'+f'{idx}.mat'
-        else:
-            path=self.dataset_dir+'testing/'+f'{idx}.mat'
+        for i in os.walk(self.dataset_dir):
+            name_list=i[2]
+            try:
+                name_list.remove('.DS_Store')
+            except:
+                pass
+        path=self.dataset_dir+name_list[idx]
+        # if self.train:
+        #     path=self.dataset_dir+'training/'+f'{idx}.mat'
+        # else:
+        #     path=self.dataset_dir+'testing/'+f'{idx}.mat'
         image=self.load(path, 'image')
         mask=self.load(path, 'tumorMask')
         label=self.load(path, 'label')
