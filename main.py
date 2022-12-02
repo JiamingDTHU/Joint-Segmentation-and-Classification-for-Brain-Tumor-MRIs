@@ -20,13 +20,14 @@ def train(model: cUNet,
     for batch_idx, data in enumerate(train_loader, 0):
         inputs, targets, labels=data
         inputs, targets, labels=inputs.to(device), targets.to(device), labels.to(device)
-        optimizer.zero_grad() # 将上一个轮次训练的梯度清零
+        optimizer.zero_grad() # set gradient of last epoch to zero
         outputs1, outputs2=model(inputs)
         l1=criterion1(outputs1, labels) # loss of classification
         l2=criterion2(outputs2[:, 0], targets) # loss of segmentation
         s1=np.random.randn()
         s2=np.random.randn()
-        loss=(l1+l2)/2 # calculate Multi-task loss
+        # loss=(l1+l2)/2 # calculate Multi-task loss
+        loss=l1
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
         
