@@ -53,9 +53,7 @@ class TumorDataset(Dataset):
         
         if field == 'image':
             # scale to range 0~1
-            temp=result.copy()
-            temp[temp>=256]=255
-            result = temp/256.
+            result=(result-np.min(result))/(np.max(result)-np.min(result))
         elif field == 'label':
             result = int(result[0][0])
         
