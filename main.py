@@ -4,6 +4,7 @@ from dice_score import *
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from tumorDataset import *
+import matplotlib.pyplot as plt
 
 def train(model: cUNet, 
           device: torch.device, 
@@ -22,12 +23,12 @@ def train(model: cUNet,
         inputs, targets, labels=inputs.to(device), targets.to(device), labels.to(device)
         optimizer.zero_grad() # set gradient of last epoch to zero
         outputs1, outputs2=model(inputs)
-        l1=criterion1(outputs1, labels) # loss of classification
+        # l1=criterion1(outputs1, labels) # loss of classification
         l2=criterion2(outputs2[:, 0], targets) # loss of segmentation
         s1=np.random.randn()
         s2=np.random.randn()
         # loss=(l1+l2)/2 # calculate Multi-task loss
-        loss=l1
+        loss=l2
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
         
@@ -56,12 +57,26 @@ def test(model: cUNet,
             correct+=(predicted-labels<1e-6).sum().item()
             total_dice+=dice_coeff(outputs2[:, 0], targets)
     print('accuracy on test set: {}%\naverage dice score: {}'.format(100*correct/total, total_dice/total))
-    
+    image=np.array(images.cpu())
+    target=np.array(targets.cpu())
+    output2=np.array(outputs2.cpu())
+
+    print(image.shape, target.shape, output2.shape)
+    plt.figure(figsize=(15, 30))
+    plt.subplot(131)
+    plt.imshow(image[0][0], 'gray')
+    plt.subplot(132)
+    plt.imshow(target[0], 'gray')
+    plt.title('target')
+    plt.subplot(133)
+    plt.imshow(output2[0][0], 'gray')
+    plt.title('predict')
+    plt.show()
     return
 
 def main():
     batch_size=8
-    epochs=3
+    epochs=1
     model=cUNet()
     device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
@@ -74,7 +89,7 @@ def main():
     optimizer=torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.5)
 
     for epoch in range(epochs):
-        train(model, device, batch_size, train_loader, optimizer, criterion, dice_loss, epoch)
+        # train(model, device, batch_size, train_loader, optimizer, criterion, dice_loss, epoch)
         test(model, device, test_loader)
 
 if __name__ == '__main__':
