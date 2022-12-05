@@ -55,6 +55,8 @@ class TumorDataset(Dataset):
         if field == 'image':
             # scale to range 0~1
             result=(result-np.min(result))/(np.max(result)-np.min(result))
+            # downsample image to size(256, 256)
+            result=cv2.resize(result, (256, 256), interpolation='bicubic')
         elif field == 'label':
             result = int(result[0][0])
         
