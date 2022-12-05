@@ -41,7 +41,7 @@ class cUNet(torch.nn.Module):
         self.encode_flat3=double_conv2d_bn(32, 64)
         self.encode_flat4=double_conv2d_bn(64, 128)
         self.encode_flat5=double_conv2d_bn(128, 256)
-        self.l1=torch.nn.Linear(1024, 3)
+        self.l1=torch.nn.Linear(256, 3)
         self.decode_flat1=double_conv2d_bn(256, 128)
         self.decode_flat2=double_conv2d_bn(128, 64)
         self.decode_flat3=double_conv2d_bn(64, 32)
@@ -54,38 +54,40 @@ class cUNet(torch.nn.Module):
         self.deconv4=deconv2d_bn(32, 16)
         
     def forward(self,x):
-        conv1 = self.encode_flat1(x) # size(8, 16, 512, 512)
-        pool1 = F.max_pool2d(conv1, 2) # size(8, 16, 256, 256)
+        x=F.interpolate(x, size=(256, 256), mode='bicubic') # downsample images to size(256, 256)
+        conv1 = self.encode_flat1(x) # tensor size(8, 16, 256, 256)
+        pool1 = F.max_pool2d(conv1, 2) # size(8, 16, 128, 128)
         
-        conv2 = self.encode_flat2(pool1) # size(8, 32, 256, 256)
-        pool2 = F.max_pool2d(conv2, 2) # size(8, 32, 128, 128)
+        conv2 = self.encode_flat2(pool1) # size(8, 32, 128, 128)
+        pool2 = F.max_pool2d(conv2, 2) # size(8, 32, 64, 64)
         
-        conv3 = self.encode_flat3(pool2) # size(8, 64, 128, 128)
-        pool3 = F.max_pool2d(conv3, 2) # size(8, 64, 64, 64)
+        conv3 = self.encode_flat3(pool2) # size(8, 64, 64, 64)
+        pool3 = F.max_pool2d(conv3, 2) # size(8, 64, 32, 32)
         
-        conv4 = self.encode_flat4(pool3) # size(8, 128, 64, 64)
-        pool4 = F.max_pool2d(conv4, 2) # size(8, 128, 32, 32)
+        conv4 = self.encode_flat4(pool3) # size(8, 128, 32, 32)
+        pool4 = F.max_pool2d(conv4, 2) # size(8, 128, 16, 16)
         
-        conv5 = self.encode_flat5(pool4) # size(8, 256, 32, 32)
+        conv5 = self.encode_flat5(pool4) # size(8, 256, 16, 16)
         
-        convt1 = self.deconv1(conv5) # size(8, 128, 64, 64)
-        concat1 = torch.cat([convt1,conv4],dim=1) # size(8, 256, 64, 64)
-        conv6 = self.decode_flat1(concat1) # size(8, 128, 64, 64)
+        convt1 = self.deconv1(conv5) # size(8, 128, 32, 32)
+        concat1 = torch.cat([convt1,conv4],dim=1) # size(8, 256, 32, 32)
+        conv6 = self.decode_flat1(concat1) # size(8, 128, 32, 32)
         
-        convt2 = self.deconv2(conv6) # size(8, 64, 128, 128)
-        concat2 = torch.cat([convt2,conv3],dim=1) # size(8, 128, 128, 128)
-        conv7 = self.decode_flat2(concat2) # size(8, 64, 128, 128)
+        convt2 = self.deconv2(conv6) # size(8, 64, 64, 64)
+        concat2 = torch.cat([convt2,conv3],dim=1) # size(8, 128, 64, 64)
+        conv7 = self.decode_flat2(concat2) # size(8, 64, 64, 64)
         
-        convt3 = self.deconv3(conv7) # size(8, 32, 256, 256)
-        concat3 = torch.cat([convt3,conv2],dim=1) # size(8, 64, 256, 256)
-        conv8 = self.decode_flat3(concat3) # size(8, 32, 256, 256)
+        convt3 = self.deconv3(conv7) # size(8, 32, 128, 128)
+        concat3 = torch.cat([convt3,conv2],dim=1) # size(8, 64, 128, 128)
+        conv8 = self.decode_flat3(concat3) # size(8, 32, 128, 128)
         
-        convt4 = self.deconv4(conv8) # size(8, 16, 512, 512)
-        concat4 = torch.cat([convt4,conv1],dim=1) # size(8, 32, 512, 512)
-        conv9 = self.decode_flat4(concat4) # sie(8, 16, 512, 512)
+        convt4 = self.deconv4(conv8) # size(8, 16, 256, 256)
+        concat4 = torch.cat([convt4,conv1],dim=1) # size(8, 32, 256, 256)
+        conv9 = self.decode_flat4(concat4) # size(8, 16, 256, 256)
         
-        output1 = self.l1(conv5[:, 0, :, :].view(-1, 1024))  # classification branch
+        output1 = self.l1(conv5[:, 0, :, :].view(-1, 256))  # classification branch
         output2 = self.decode_flat5(conv9) # segmentation branch
+        output2 = F.interpolate(output2, size=(512, 512), mode='bicubic') # upsample images to size(512, 512)
         
         return output1, output2
         

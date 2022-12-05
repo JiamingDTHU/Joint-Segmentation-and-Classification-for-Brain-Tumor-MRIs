@@ -4,14 +4,15 @@ from dice_score import *
 from torchvision import transforms
 from torch.utils.data import DataLoader
 from tumorDataset import *
+import matplotlib.pyplot as plt
+from multiLoss import *
 
 def train(model: cUNet, 
           device: torch.device, 
           batch_size: int, 
           train_loader: DataLoader, 
           optimizer: torch.optim.Optimizer, 
-          criterion1: torch.nn.Module, 
-          criterion2: torch.nn.Module, 
+          criterion: torch.nn.Module, 
           epoch: int):
     '''
     one epoch training process, containing: forwarding, calculating loss value, back propagation, printing some of the training progress
@@ -20,13 +21,9 @@ def train(model: cUNet,
     for batch_idx, data in enumerate(train_loader, 0):
         inputs, targets, labels=data
         inputs, targets, labels=inputs.to(device), targets.to(device), labels.to(device)
-        optimizer.zero_grad() # 将上一个轮次训练的梯度清零
+        optimizer.zero_grad() # set gradient of last epoch to zero
         outputs1, outputs2=model(inputs)
-        l1=criterion1(outputs1, labels) # loss of classification
-        l2=criterion2(outputs2[:, 0], targets) # loss of segmentation
-        s1=np.random.randn()
-        s2=np.random.randn()
-        loss=(l1+l2)/2 # calculate Multi-task loss
+        loss=criterion(outputs1, outputs2, labels, targets, 'segmentation')
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
         
@@ -52,10 +49,10 @@ def test(model: cUNet,
             outputs=model(images)
             _, predicted=torch.max(outputs.data, dim=1)
             total+=labels.size(0)
-            correct+=(predicted==labels).sum().item()
-            total_dice+=dice_coeff(images, targets)
-    print('accuracy on test set: {}\ndice score{}%'.format(100*correct/total, total_dice/total))
-    
+            correct+=(predicted-labels<1e-6).sum().item()
+            total_dice+=dice_coeff(outputs2[:, 0], targets)
+    print('accuracy on test set: {}%\naverage dice score: {}'.format(100*correct/total, total_dice/total))
+
     return
 
 def main():
@@ -64,16 +61,20 @@ def main():
     model=cUNet()
     device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
+    s1=torch.tensor(np.random.randn(), device=device, requires_grad=True)
+    s2=torch.tensor(np.random.randn(), device=device, requires_grad=True)
+    params=(list(model.parameters())+[s1]+[s2])
     transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1402, ), (0.8402, ))])
     train_dataset=TumorDataset(dataset_dir='./dataset/training/', train=True, transform=transform)
     train_loader=DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     test_dataset=TumorDataset(dataset_dir='./dataset/testing/', train=False, transform=transform)
     test_loader=DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
     criterion=torch.nn.CrossEntropyLoss()
-    optimizer=torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.5)
+    multiloss=MultiLoss(device, criterion, dice_loss)
+    optimizer=torch.optim.SGD(params, lr=1e-4, momentum=0.9)
 
     for epoch in range(epochs):
-        train(model, device, batch_size, train_loader, optimizer, criterion, dice_loss, epoch)
+        train(model, device, batch_size, train_loader, optimizer, multiloss, epoch)
         test(model, device, test_loader)
 
 if __name__ == '__main__':
