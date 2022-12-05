@@ -23,7 +23,7 @@ def train(model: cUNet,
         inputs, targets, labels=inputs.to(device), targets.to(device), labels.to(device)
         optimizer.zero_grad() # set gradient of last epoch to zero
         outputs1, outputs2=model(inputs)
-        loss=criterion(outputs1, outputs2, labels, targets, 'segmentation')
+        loss=criterion(outputs1, outputs2, labels, targets, 'classification')
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
         
@@ -57,13 +57,10 @@ def test(model: cUNet,
 
 def main():
     batch_size=8
-    epochs=1
+    epochs=5
     model=cUNet()
     device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
-    s1=torch.tensor(np.random.randn(), device=device, requires_grad=True)
-    s2=torch.tensor(np.random.randn(), device=device, requires_grad=True)
-    params=(list(model.parameters())+[s1]+[s2])
     transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1402, ), (0.8402, ))])
     train_dataset=TumorDataset(dataset_dir='./dataset/training/', train=True, transform=transform)
     train_loader=DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
@@ -71,7 +68,7 @@ def main():
     test_loader=DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
     criterion=torch.nn.CrossEntropyLoss()
     multiloss=MultiLoss(device, criterion, dice_loss)
-    optimizer=torch.optim.SGD(params, lr=1e-4, momentum=0.9)
+    optimizer=torch.optim.SGD(multiloss.parameters(), lr=1e-3, momentum=0.9)
 
     for epoch in range(epochs):
         train(model, device, batch_size, train_loader, optimizer, multiloss, epoch)
