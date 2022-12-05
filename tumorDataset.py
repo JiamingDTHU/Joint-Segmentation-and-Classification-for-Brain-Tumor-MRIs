@@ -7,7 +7,7 @@ import h5py
 from utils import *
 
 class TumorDataset(Dataset):
-    def __init__(self, dataset_dir: str = './dataset/', train: bool = True, transform: transforms = None):
+    def __init__(self, dataset_dir: str, train: bool = True, transform: transforms = None):
         self.dataset_dir=dataset_dir
         self.transform=transform
         self.train=train

@@ -5,16 +5,14 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from tumorDataset import *
 import matplotlib.pyplot as plt
+from multiLoss import *
 
 def train(model: cUNet, 
           device: torch.device, 
           batch_size: int, 
           train_loader: DataLoader, 
           optimizer: torch.optim.Optimizer, 
-          criterion1: torch.nn.Module, 
-          criterion2: torch.nn.Module, 
-          s1: torch.Tensor, 
-          s2: torch.Tensor, 
+          criterion: torch.nn.Module, 
           epoch: int):
     '''
     one epoch training process, containing: forwarding, calculating loss value, back propagation, printing some of the training progress
@@ -25,9 +23,7 @@ def train(model: cUNet,
         inputs, targets, labels=inputs.to(device), targets.to(device), labels.to(device)
         optimizer.zero_grad() # set gradient of last epoch to zero
         outputs1, outputs2=model(inputs)
-        l1=criterion1(outputs1, labels) # loss of classification
-        l2=criterion2(outputs2[:, 0], targets) # loss of segmentation
-        loss=l1/(2*s1**2)+l2/(2*s2**2)+np.log(s1*s2)
+        loss=criterion(outputs1, outputs2, labels, targets, 'segmentation')
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
         
@@ -88,10 +84,11 @@ def main():
     test_dataset=TumorDataset(dataset_dir='./dataset/testing/', train=False, transform=transform)
     test_loader=DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
     criterion=torch.nn.CrossEntropyLoss()
-    optimizer=torch.optim.SGD(params, lr=7.5e-3, momentum=0.6)
+    multiloss=MultiLoss(device, criterion, dice_loss)
+    optimizer=torch.optim.SGD(params, lr=1e-4, momentum=0.9)
 
     for epoch in range(epochs):
-        train(model, device, batch_size, train_loader, optimizer, criterion, dice_loss, s1, s2, epoch)
+        train(model, device, batch_size, train_loader, optimizer, multiloss, epoch)
         test(model, device, test_loader)
 
 if __name__ == '__main__':
