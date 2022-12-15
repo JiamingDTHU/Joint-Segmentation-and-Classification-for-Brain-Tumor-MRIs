@@ -39,7 +39,7 @@ class TumorDataset(Dataset):
         return (
             torch.as_tensor(image).float(), 
             torch.as_tensor(mask).float(), 
-            torch.as_tensor(label-1).long()
+            torch.as_tensor(label).long()
         )
         
     @staticmethod
@@ -55,7 +55,7 @@ class TumorDataset(Dataset):
             # scale to range 0~1
             result=(result-np.min(result))/(np.max(result)-np.min(result))
         elif field == 'label':
-            result = int(result[0][0])
+            result = int(result[0][0])-1
         
         return result
     

@@ -67,7 +67,7 @@ class cUNet(torch.nn.Module):
         conv4 = self.encode_flat4(pool3) # size(8, 128, 32, 32)
         pool4 = F.max_pool2d(conv4, 2) # size(8, 128, 16, 16)
         
-        conv5 = self.encode_flat5(pool4) # size(8, 256, 16, 16)
+        conv5 = F.relu(self.encode_flat5(pool4)) # size(8, 256, 16, 16)
         
         convt1 = self.deconv1(conv5) # size(8, 128, 32, 32)
         concat1 = torch.cat([convt1,conv4],dim=1) # size(8, 256, 32, 32)
@@ -86,7 +86,7 @@ class cUNet(torch.nn.Module):
         conv9 = self.decode_flat4(concat4) # size(8, 16, 256, 256)
         
         output1 = self.l1(conv5[:, 0, :, :].view(-1, 256))  # classification branch
-        output2 = self.decode_flat5(conv9) # segmentation branch
+        output2 = F.relu(self.decode_flat5(conv9)) # segmentation branch
         output2 = F.interpolate(output2, size=(512, 512), mode='bicubic') # upsample images to size(512, 512)
         
         return output1, output2
