@@ -23,4 +23,5 @@ class MultiLoss(torch.nn.CrossEntropyLoss):
         pass
     
 def test_loss(inputs, targets):
-    return F.cross_entropy(inputs, targets, reduction=None).mean(1).mean(1)
+    inputs, targets=inputs.reshape((-1, 1, 512, 512)), targets.reshape((-1, 1, 512, 512))
+    return F.cross_entropy(inputs, targets, reduction='mean')

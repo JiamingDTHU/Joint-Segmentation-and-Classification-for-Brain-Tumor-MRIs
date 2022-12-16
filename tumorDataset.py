@@ -38,7 +38,7 @@ class TumorDataset(Dataset):
         
         return (
             torch.as_tensor(image).float(), 
-            torch.as_tensor(mask).float(), 
+            torch.as_tensor(mask).long(), 
             torch.as_tensor(label).long()
         )
         

@@ -25,26 +25,26 @@ def train(model: UNet,
         optimizer.zero_grad() # set gradient of last epoch to zero
         # outputs1, outputs2=model(inputs)
         outputs2=model(inputs)
-        # loss=criterion(outputs1, outputs2, labels, targets, 'segmentation')
-        loss=criterion(outputs2[:, 0], targets)
+        loss=criterion(outputs2, targets)
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
         
         running_loss+=loss.item() # sum of total loss
-        if batch_idx % 300 == 299:
-            print('第{}轮次已训练{}批样本, 本批次平均loss值: {}'.format(epoch+1, batch_idx+1, running_loss/300))
+        if batch_idx % 2740 == 2739:
+            print('第{}轮次已训练{}批样本, 本批次平均loss值: {}'.format(epoch+1, batch_idx+1, running_loss/2740))
             running_loss=0.
     return
 
 def test(model: cUNet, 
          device: torch.device, 
-         test_loader: DataLoader):
+         test_loader: DataLoader,
+         criterion: torch.nn.Module):
     '''
     testing the accuracy of current partly-trained model and print
     '''
     correct=0
     total=0
-    total_dice=0
+    total_loss=0
     with torch.no_grad():
         for data in test_loader:
             images, targets, labels=data
@@ -54,14 +54,14 @@ def test(model: cUNet,
             # _, predicted=torch.max(outputs1.data, dim=1)
             total+=labels.size(0)
             # correct+=(predicted-labels<1e-6).sum().item()
-            total_dice+=dice_coeff(outputs2[:, 0], targets)
+            total_loss+=criterion(outputs2, targets)
     # print('accuracy on test set: {}%\naverage dice score: {}'.format(100*correct/total, total_dice/total))
-    print(f'current epoch average dice score: {total_dice/total}')
+    print(f'current epoch average cross entropy loss: {total_loss/total}')
     image=np.array(images.cpu())
     target=np.array(targets.cpu())
     output2=np.array(outputs2.cpu())
 
-    print('statistic features', np.max(output2[0][0]), np.min(output2[0][0]), np.mean(output2[0][0]), np.median(output2[0][0]))
+    print('statistic measures', np.max(output2[0][0]), np.min(output2[0][0]), np.mean(output2[0][0]), np.median(output2[0][0]))
     plt.figure(figsize=(15, 30))
     plt.subplot(131)
     plt.imshow(image[0][0], 'gray')
@@ -75,8 +75,8 @@ def test(model: cUNet,
     return
 
 def main():
-    batch_size=8
-    epochs=5
+    batch_size=1
+    epochs=50
     model=UNet(1, 2)
     device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
@@ -86,13 +86,11 @@ def main():
     test_dataset=TumorDataset(dataset_dir='./dataset/testing/', train=False, transform=transform)
     test_loader=DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
     criterion=torch.nn.CrossEntropyLoss()
-    # multiloss=MultiLoss(device, criterion, dice_loss)
-    loss=dice_loss
     optimizer=torch.optim.SGD(model.parameters(), lr=1e-6, momentum=0.9)
 
     for epoch in range(epochs):
-        train(model, device, batch_size, train_loader, optimizer, loss, epoch)
-        test(model, device, test_loader)
+        train(model, device, batch_size, train_loader, optimizer, criterion, epoch)
+        test(model, device, test_loader, criterion)
 
 if __name__ == '__main__':
     main()
