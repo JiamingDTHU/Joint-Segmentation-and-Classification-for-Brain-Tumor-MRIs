@@ -6,6 +6,7 @@ from torchvision import transforms
 from torch.utils.data import DataLoader
 from tumorDataset import *
 import matplotlib.pyplot as plt
+from utils import *
 from multiLoss import *
 
 def train(model: UNet, 
@@ -21,6 +22,8 @@ def train(model: UNet,
     running_loss=0.
     for batch_idx, data in enumerate(train_loader, 0):
         inputs, targets, labels=data
+        inputs, targets=dataAug(inputs, targets)
+        inputs=preprocessing(inputs)
         inputs, targets, labels=inputs.to(device), targets.to(device), labels.to(device)
         optimizer.zero_grad() # set gradient of last epoch to zero
         # outputs1, outputs2=model(inputs)

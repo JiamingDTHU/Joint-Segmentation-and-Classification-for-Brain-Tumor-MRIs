@@ -93,24 +93,27 @@ def interpolation(img: np.ndarray, dst_shape: tuple, mode: str = 'bilinear'):
     
     return result
 
-def rot90(tensor):
-    result=torch.rot90(tensor, 1, dims=(-2, -1))
+def identical(img):
+    return img
+
+def rot90(img):
+    result=np.rot90(img, 1, dims=(-2, -1))
     return result
 
-def rot180(tensor):
-    result=torch.rot180(tensor, 2, dims=(-2, -1))
+def rot180(img):
+    result=np.rot90(img, 2, dims=(-2, -1))
     return result
 
-def rot270(tensor):
-    result=torch.rot270(tensor, 3, dims=(-2, -1))
+def rot270(img):
+    result=np.rot90(img, 3, dims=(-2, -1))
     return result
 
-def hormir(tensor):
-    result=torch.flip(tensor, [-2])
+def hormir(img):
+    result=np.flip(img, -1)
     return result
 
-def vertmir(tensor):
-    result=torch.flip(tensor, [-1])
+def vertmir(img):
+    result=np.flip(img, -2)
     return result
 
 def preprocessing(img):
@@ -120,7 +123,7 @@ def preprocessing(img):
     result=clahe.apply(result)
     return result
 
-def dataAug(img:torch.Tensor, mask: torch.Tensor):
-    trans_func=np.random.choice([rot90, rot180, rot270, hormir, vertmir])
+def dataAug(img, mask):
+    trans_func=np.random.choice([identical, rot90, rot180, rot270, hormir, vertmir])
     img_res, mask_res=trans_func(img), trans_func(mask)
     return img_res, mask_res

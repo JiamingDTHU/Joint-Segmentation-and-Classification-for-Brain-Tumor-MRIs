@@ -33,6 +33,8 @@ class TumorDataset(Dataset):
         image=self.load(path, 'image')
         mask=self.load(path, 'tumorMask')
         label=self.load(path, 'label')
+        image=preprocessing(image)
+        image, mask=dataAug(image, mask)
         if self.transform:
             image=self.transform(image)
         
