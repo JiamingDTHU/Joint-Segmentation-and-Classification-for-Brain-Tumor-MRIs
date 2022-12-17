@@ -2,6 +2,8 @@
 import cv2
 import numpy as np
 import torch
+import matplotlib.pyplot as plt
+
 
 def bilinear_interpolation(src: np.ndarray, dst_shape: tuple):
     '''Bilinear interpolation'''
@@ -97,31 +99,60 @@ def identical(img):
     return img
 
 def rot90(img):
-    result=np.rot90(img, 1, dims=(-2, -1))
-    return result
+    result=np.rot90(img, 1, axes=(0, 1))
+    return result.copy()
 
 def rot180(img):
-    result=np.rot90(img, 2, dims=(-2, -1))
-    return result
+    result=np.rot90(img, 2, axes=(0, 1))
+    return result.copy()
 
 def rot270(img):
-    result=np.rot90(img, 3, dims=(-2, -1))
-    return result
+    result=np.rot90(img, 3, axes=(0, 1))
+    return result.copy()
 
 def hormir(img):
-    result=np.flip(img, -1)
-    return result
+    result=np.fliplr(img)
+    return result.copy()
 
 def vertmir(img):
-    result=np.flip(img, -2)
+    result=np.flipud(img)
+    return result.copy()
+
+def medianFilter(img, kernelshape=(3, 3), paddle='zero'):
+    (M, N)=img.shape
+    (m, n)=kernelshape
+    result=np.zeros(img.shape, float)
+    if paddle == 'zero':
+        temp=np.zeros((M+2*int(m/2), N+2*int(n/2)))
+    else:
+        temp=np.zeros((M+2*int(m/2), N+2*int(n/2)))
+    temp[int(m/2):int(m/2)+M, int(n/2):int(n/2)+N]=img.copy()
+    for i in range(0, M):
+        for j in range(0, N):
+            result[i, j]=np.median(temp[i:i+m, j:j+n].copy())
     return result
 
 def preprocessing(img):
-    result=cv2.GaussianBlur(img, 5, 1)
-    result=cv2.medianBlur(result, 5)
+    normed=((img-np.min(img))/(np.max(img)-np.min(img))*255).astype(np.uint8)
+    plt.imshow(normed, 'gray')
+    plt.title('normed')
+    plt.show()
+    gaussed=cv2.GaussianBlur(img, (5, 5), 0.5)
+    plt.imshow(gaussed, 'gray')
+    plt.title('gaussed')
+    plt.show()
+    meded=medianFilter(gaussed, (5, 5))
+    plt.imshow(meded, 'gray')
+    plt.title('meded')
+    plt.show()
+    normed=((meded-np.min(meded))/(np.max(meded)-np.min(meded))*255).astype(np.uint8)
     clahe=cv2.createCLAHE(2., (8, 8))
-    result=clahe.apply(result)
-    return result
+    enhanced=clahe.apply(normed)
+    plt.imshow(enhanced, 'gray')
+    plt.title('enhanced')
+    plt.show()
+    result=(enhanced-np.min(enhanced))/(np.max(enhanced)-np.min(enhanced))
+    return result.copy()
 
 def dataAug(img, mask):
     trans_func=np.random.choice([identical, rot90, rot180, rot270, hormir, vertmir])

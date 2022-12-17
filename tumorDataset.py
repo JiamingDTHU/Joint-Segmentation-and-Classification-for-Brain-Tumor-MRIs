@@ -32,9 +32,9 @@ class TumorDataset(Dataset):
         path=self.dataset_dir+name_list[idx]
         image=self.load(path, 'image')
         mask=self.load(path, 'tumorMask')
-        label=self.load(path, 'label')
-        image=preprocessing(image)
-        image, mask=dataAug(image, mask)
+        label=int(self.load(path, 'label'))-1
+        image=preprocessing(image) # 高斯模糊，中值滤波， 对比度增强， 归一化
+        image, mask=dataAug(image, mask) # 数据增强，包括旋转，镜像，操作对mask也是同样进行的
         if self.transform:
             image=self.transform(image)
         
@@ -52,12 +52,6 @@ class TumorDataset(Dataset):
         
         with h5py.File(path, 'r') as f:
             result=np.array(f['cjdata'][field])
-        
-        if field == 'image':
-            # scale to range 0~1
-            result=(result-np.min(result))/(np.max(result)-np.min(result))
-        elif field == 'label':
-            result = int(result[0][0])-1
         
         return result
     

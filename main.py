@@ -22,8 +22,6 @@ def train(model: UNet,
     running_loss=0.
     for batch_idx, data in enumerate(train_loader, 0):
         inputs, targets, labels=data
-        inputs, targets=dataAug(inputs, targets)
-        inputs=preprocessing(inputs)
         inputs, targets, labels=inputs.to(device), targets.to(device), labels.to(device)
         optimizer.zero_grad() # set gradient of last epoch to zero
         # outputs1, outputs2=model(inputs)
@@ -83,7 +81,7 @@ def main():
     model=UNet(1, 2)
     device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
-    transform=transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1402, ), (0.8402, ))])
+    transform=transforms.Compose([transforms.ToTensor()])
     train_dataset=TumorDataset(dataset_dir='./dataset/training/', train=True, transform=transform)
     train_loader=DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     test_dataset=TumorDataset(dataset_dir='./dataset/testing/', train=False, transform=transform)
