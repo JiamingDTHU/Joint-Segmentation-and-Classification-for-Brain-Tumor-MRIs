@@ -1,6 +1,7 @@
 '''Some useful utilities'''
-
+import cv2
 import numpy as np
+import torch
 
 def bilinear_interpolation(src: np.ndarray, dst_shape: tuple):
     '''Bilinear interpolation'''
@@ -91,3 +92,35 @@ def interpolation(img: np.ndarray, dst_shape: tuple, mode: str = 'bilinear'):
         result = bicubic_interpolation(img, dst_shape)
     
     return result
+
+def rot90(tensor):
+    result=torch.rot90(tensor, 1, dims=(-2, -1))
+    return result
+
+def rot180(tensor):
+    result=torch.rot180(tensor, 2, dims=(-2, -1))
+    return result
+
+def rot270(tensor):
+    result=torch.rot270(tensor, 3, dims=(-2, -1))
+    return result
+
+def hormir(tensor):
+    result=torch.flip(tensor, [-2])
+    return result
+
+def vertmir(tensor):
+    result=torch.flip(tensor, [-1])
+    return result
+
+def preprocessing(img):
+    result=cv2.GaussianBlur(img, 5, 1)
+    result=cv2.medianBlur(result, 5)
+    clahe=cv2.createCLAHE(2., (8, 8))
+    result=clahe.apply(result)
+    return result
+
+def dataAug(img:torch.Tensor, mask: torch.Tensor):
+    trans_func=np.random.choice([rot90, rot180, rot270, hormir, vertmir])
+    img_res, mask_res=trans_func(img), trans_func(mask)
+    return img_res, mask_res
