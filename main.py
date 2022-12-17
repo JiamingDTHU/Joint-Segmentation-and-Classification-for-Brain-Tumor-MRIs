@@ -87,7 +87,7 @@ def main():
     test_dataset=TumorDataset(dataset_dir='./dataset/testing/', train=False, transform=transform)
     test_loader=DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
     criterion=torch.nn.CrossEntropyLoss()
-    optimizer=torch.optim.SGD(model.parameters(), lr=1e-6, momentum=0.9)
+    optimizer=torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.9)
 
     for epoch in range(epochs):
         train(model, device, batch_size, train_loader, optimizer, criterion, epoch)

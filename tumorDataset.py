@@ -48,7 +48,7 @@ class TumorDataset(Dataset):
     def load(path, field):
         '''Load and preprocess a single .mat data file'''
         
-        assert field in ['image', 'label', 'tumorMask'], 'Incorrect data field'
+        assert field in ['image', 'label', 'tumorMask', 'tumorBorder'], 'Incorrect data field'
         
         with h5py.File(path, 'r') as f:
             result=np.array(f['cjdata'][field])
