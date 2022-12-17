@@ -134,11 +134,21 @@ def medianFilter(img, kernelshape=(3, 3), paddle='zero'):
 
 def preprocessing(img):
     normed=((img-np.min(img))/(np.max(img)-np.min(img))*255).astype(np.uint8)
-    gaussed=cv2.GaussianBlur(img, (5, 5), 0.5)
-    meded=medianFilter(gaussed, (5, 5))
+    gaussed=cv2.GaussianBlur(normed, (5, 5), 0.5)
+    # plt.imshow(gaussed, 'gray')
+    # plt.title('gauss')
+    # plt.show()
+    normed=((gaussed-np.min(gaussed))/(np.max(gaussed)-np.min(gaussed))*255).astype(np.uint8)
+    meded=cv2.medianBlur(normed, 5)
+    # plt.imshow(meded, 'gray')
+    # plt.title('median')
+    # plt.show()
     normed=((meded-np.min(meded))/(np.max(meded)-np.min(meded))*255).astype(np.uint8)
     clahe=cv2.createCLAHE(2., (8, 8))
     enhanced=clahe.apply(normed)
+    # plt.imshow(enhanced, 'gray')
+    # plt.title('contrast enhance')
+    # plt.show()
     result=(enhanced-np.min(enhanced))/(np.max(enhanced)-np.min(enhanced))
     return result.copy()
 
