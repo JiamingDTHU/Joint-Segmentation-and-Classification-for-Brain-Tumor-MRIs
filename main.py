@@ -77,7 +77,7 @@ def test(model: cUNet,
 
 def main():
     batch_size=1
-    epochs=50
+    epochs=1
     model=UNet(1, 2)
     device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
