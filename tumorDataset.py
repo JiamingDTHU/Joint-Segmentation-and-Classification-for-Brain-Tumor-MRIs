@@ -34,7 +34,7 @@ class TumorDataset(Dataset):
         mask=self.load(path, 'tumorMask')
         label=int(self.load(path, 'label'))-1
         image=preprocessing(image) # 高斯模糊，中值滤波， 对比度增强， 归一化
-        image, mask=dataAug(image, mask) # 数据增强，包括旋转，镜像，操作对mask也是同样进行的
+        image, mask=dataAug(image, mask) # 数据增强，包括旋转，镜像，对图像与mask施加同样的操作
         if self.transform:
             image=self.transform(image)
         
