@@ -32,12 +32,14 @@ Email: chengjun583@qq.com
  2. After we complete task 1, we will modify our networks to try to achieve higher prediction performance 
 
 ## Todo List
+- [ ] Data Augmentation
+- [ ] Preprocessing
 - [x] Data loading module
-- [x] Network definition
+- [ ] Network definition
 - [x] Loss function definition
 - [x] Training and evaluation function definition
 - [x] Main process (training and evaluation)
-- [ ] Debug and optimization
+- [ ] Train to make it work
 
 
 [^01]:Simultaneous Segmentation and Classification of Bone Surfaces from Ultrasound Using a Multi-feature Guided CNN. Wang, P et al

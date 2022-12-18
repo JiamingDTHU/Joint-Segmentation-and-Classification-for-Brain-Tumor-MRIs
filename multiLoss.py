@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 class MultiLoss(torch.nn.CrossEntropyLoss):
     def __init__(self, device, criterion1, criterion2):
@@ -20,3 +21,7 @@ class MultiLoss(torch.nn.CrossEntropyLoss):
         elif mode=='segmentation':
             return l2
         pass
+    
+def test_loss(inputs, targets):
+    inputs, targets=inputs.reshape((-1, 1, 512, 512)), targets.reshape((-1, 1, 512, 512))
+    return F.cross_entropy(inputs, targets, reduction='mean')
