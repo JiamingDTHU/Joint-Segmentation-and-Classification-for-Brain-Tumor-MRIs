@@ -30,7 +30,7 @@ Email: chengjun583@qq.com
 
  1. We intend to reproduce the experiment results of a paper using cUNet that can simultaneously complete segmentation task and classification task[^01]. 
  2. After we complete task 1, we will modify our networks to try to achieve higher prediction performance 
- 3. Plan B: implement Edge-Unet in which we find our dataset
+ 3. Plan B: implement Edge-Unet in which[^02] we find our dataset
 
 ## Todo List
 - [x] Data Augmentation
@@ -45,3 +45,4 @@ Email: chengjun583@qq.com
 
 
 [^01]:Simultaneous Segmentation and Classification of Bone Surfaces from Ultrasound Using a Multi-feature Guided CNN. Wang, P et al
+[^02]:Edge Unet: Braintumor segmentation using MRI based on deep U-Net model with boundary information, Allah, A.M.G et al
