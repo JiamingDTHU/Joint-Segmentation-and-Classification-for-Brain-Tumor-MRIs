@@ -156,3 +156,14 @@ def dataAug(img, mask):
     trans_func=np.random.choice([identical, rot90, rot180, rot270, hormir, vertmir])
     img_res, mask_res=trans_func(img), trans_func(mask)
     return img_res, mask_res
+
+def myCrossEntropyLoss(output, target):
+    output=output.detach().numpy()[0, 1].reshape((512, 512))
+    target=target.detach().numpy().reshape((512, 512))
+    loss=-np.sum(target*np.log(output+1e-12)+(1-target)*np.log(1-output+1e-12))/(512**2)
+    return loss
+
+def my_dice_score(set_A, set_B):
+    inter=np.sum(set_A*set_B)
+    union=np.sum(set_A+set_B)
+    return 2*inter/(union+1e-12)

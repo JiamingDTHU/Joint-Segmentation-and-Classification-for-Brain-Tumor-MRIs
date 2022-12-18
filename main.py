@@ -29,10 +29,9 @@ def train(model: UNet,
         loss=criterion(outputs2, targets)
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
-        
         running_loss+=loss.item() # sum of total loss
-        if batch_idx % 2740 == 2739:
-            print('第{}轮次已训练{}批样本, 本批次平均loss值: {}'.format(epoch+1, batch_idx+1, running_loss/2740))
+        if batch_idx % 300 == 299:
+            print('第{}轮次已训练{}批样本, 本批次平均loss值: {}'.format(epoch+1, batch_idx+1, running_loss/300))
             running_loss=0.
     return
 
@@ -54,31 +53,37 @@ def test(model: cUNet,
             outputs2=model(images)
             # _, predicted=torch.max(outputs1.data, dim=1)
             total+=labels.size(0)
-            # correct+=(predicted-labels<1e-6).sum().item()
+            # correct+=(predicted-labels<0.5).sum().item()
             total_loss+=criterion(outputs2, targets)
     # print('accuracy on test set: {}%\naverage dice score: {}'.format(100*correct/total, total_dice/total))
     print(f'current epoch average cross entropy loss: {total_loss/total}')
     image=np.array(images.cpu())
     target=np.array(targets.cpu())
     output2=np.array(outputs2.cpu())
-
-    print('statistic measures', np.max(output2[0][0]), np.min(output2[0][0]), np.mean(output2[0][0]), np.median(output2[0][0]))
-    plt.figure(figsize=(15, 30))
+    output2[output2<=0.5]=0
+    output2[output2>0.5]=1
+    brain_MRI=image[0, 0].copy()
+    groun_truth=target[0].copy()
+    predict=output2[0, 1].copy()
+    # print('statistic measures', np.max(output2[0][1]), np.min(output2[0][1]), np.mean(output2[0][1]), np.median(output2[0][1]))
+    print('Dice score', my_dice_score(predict, target))
+    plt.figure(figsize=(40, 40))
     plt.subplot(131)
-    plt.imshow(image[0][0], 'gray')
+    plt.imshow(brain_MRI, 'gray')
+    plt.title('original')
     plt.subplot(132)
-    plt.imshow(target[0], 'gray')
+    plt.imshow(groun_truth, 'gray')
     plt.title('target')
     plt.subplot(133)
-    plt.imshow(output2[0][0], 'gray')
+    plt.imshow(predict, 'gray')
     plt.title('predict')
     plt.show()
-    return
+    return total_loss/total
 
 def main():
     batch_size=1
     epochs=1
-    model=UNet(1, 2)
+    model=UNet(1, 2, False)
     device=torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     transform=transforms.Compose([transforms.ToTensor()])
@@ -87,8 +92,7 @@ def main():
     test_dataset=TumorDataset(dataset_dir='./dataset/testing/', train=False, transform=transform)
     test_loader=DataLoader(test_dataset, shuffle=False, batch_size=batch_size)
     criterion=torch.nn.CrossEntropyLoss()
-    optimizer=torch.optim.SGD(model.parameters(), lr=1e-4, momentum=0.9)
-
+    optimizer=torch.optim.Adam(model.parameters(), lr=1e-6, weight_decay=1e-8)
     for epoch in range(epochs):
         train(model, device, batch_size, train_loader, optimizer, criterion, epoch)
         test(model, device, test_loader, criterion)
