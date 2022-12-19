@@ -160,4 +160,4 @@ class EdgeUNet(torch.nn.Module):
         decode4=self.decode_block4(decode3, EGB1)
         
         output=self.out_conv(decode4)
-        return F.sigmoid(output)
+        return torch.sigmoid(output)
