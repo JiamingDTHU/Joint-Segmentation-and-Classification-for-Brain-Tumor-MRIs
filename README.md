@@ -30,7 +30,7 @@ Email: chengjun583@qq.com
 
  1. We intend to reproduce the experiment results of a paper using cUNet that can simultaneously complete segmentation task and classification task[^01]. 
  2. After we complete task 1, we will modify our networks to try to achieve higher prediction performance 
- 3. Plan B: implement Edge-Unet[^02 ], which based on the dataset we are using. 
+ 3. Plan B: implement Edge-Unet,i.e reproduce the work in which[^02] we find our dataset
 
 ## Todo List
 - [x] Data Augmentation
