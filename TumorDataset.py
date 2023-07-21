@@ -31,8 +31,8 @@ class TumorDataset(Dataset):
         label = np.array(file_data["cjdata"]["label"]).item() - 1
         if self.transform:
             image = self.transform(image)
-        image = torch.unsqueeze(image, dim=0)
-        mask = torch.unsqueeze(mask, dim=0)
+        # image = torch.unsqueeze(image, dim=0)
+        # mask = torch.unsqueeze(mask, dim=0)
         
         return (
             torch.as_tensor(image).float(), 
@@ -63,7 +63,7 @@ if __name__ == "__main__":
     train_iter = DataLoader(dataset, batch_size=4, shuffle=True, num_workers=2, drop_last=True)
     valid_iter = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, drop_last=True)
     
-    for images, masks, labels in valid_iter:
-        print(images.shape)
-        print(masks.shape)
-        print(labels.shape)
+    # for images, masks, labels in valid_iter:
+    #     print(images.shape)
+    #     print(masks.shape)
+    #     print(labels.shape)
