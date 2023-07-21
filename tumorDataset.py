@@ -1,58 +1,69 @@
 import os
 import numpy as np
 import torch
-from torch.utils.data import Dataset
+import torchvision
+from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 import h5py
-from utils import *
 
 class TumorDataset(Dataset):
     def __init__(self, dataset_dir: str, train: bool = True, transform: transforms = None):
-        self.dataset_dir=dataset_dir
-        self.transform=transform
-        self.train=train
+        if train:
+            self.data_dir = os.path.join(dataset_dir, "train")
+        else:
+            self.data_dir = os.path.join(dataset_dir, "valid")
+        self.transform = transform
+        self.name_list = os.listdir(self.data_dir)
+        if ".DS_Store" in self.name_list:
+            self.name_list.remove(".DS_Store")
         
 
     def __len__(self):
-        '''90% training set and 10% testing set'''
-        if self.train:
-            return 2742
-        else:
-            return 307
+        return len(self.name_list)
         
 
     def __getitem__(self, idx):
         '''Get data from dataset and return its image, mask and label fields'''
-        for i in os.walk(self.dataset_dir):
-            name_list=i[2]
-            try:
-                name_list.remove('.DS_Store')
-            except:
-                pass
-        path=self.dataset_dir+name_list[idx]
-        image=self.load(path, 'image')
-        mask=self.load(path, 'tumorMask')
-        label=int(self.load(path, 'label'))-1
-        image=preprocessing(image) # 高斯模糊，中值滤波， 对比度增强， 归一化
-        image, mask=dataAug(image, mask) # 数据增强，包括旋转，镜像，对图像与mask施加同样的操作
+        path = os.path.join(self.data_dir, str(self.name_list[idx]))
+        file_data = h5py.File(path, "r")
+        image = np.array(file_data["cjdata"]["image"])
+        mask = np.array(file_data["cjdata"]['tumorMask'])
+        label = np.array(file_data["cjdata"]["label"]).item() - 1
         if self.transform:
-            image=self.transform(image)
+            image = self.transform(image)
+        image = torch.unsqueeze(image, dim=0)
+        mask = torch.unsqueeze(mask, dim=0)
         
         return (
             torch.as_tensor(image).float(), 
             torch.as_tensor(mask).long(), 
-            torch.as_tensor(label).long()
+            torch.as_tensor(label).long(),
         )
         
-    @staticmethod
-    def load(path, field):
-        '''Load and preprocess a single .mat data file'''
-        
-        assert field in ['image', 'label', 'tumorMask', 'tumorBorder'], 'Incorrect data field'
-        
-        with h5py.File(path, 'r') as f:
-            result=np.array(f['cjdata'][field])
-        
-        return result
     
     
+if __name__ == "__main__":
+    dataset = TumorDataset(dataset_dir="./dataset")
+    transform_train = torchvision.transforms.Compose([
+        torchvision.transforms.Grayscale(num_output_channels=3),
+        torchvision.transforms.RandomResizedCrop(224, scale=(0.08, 1), ratio=(3.0/4.0, 4.0/3.0)),
+        torchvision.transforms.RandomHorizontalFlip(), 
+        torchvision.transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+        torchvision.transforms.ToTensor(), 
+        torchvision.transforms.Normalize([0.485, 0.456, 0.406],
+                                         [0.229, 0.224, 0.225])
+])
+    transform_test = torchvision.transforms.Compose([
+        torchvision.transforms.Resize(256), 
+        torchvision.transforms.CenterCrop(224),
+        torchvision.transforms.ToTensor(),
+        torchvision.transforms.Normalize([0.485, 0.456, 0.406],
+                                        [0.229, 0.224, 0.225])
+        ])
+    train_iter = DataLoader(dataset, batch_size=4, shuffle=True, num_workers=2, drop_last=True)
+    valid_iter = DataLoader(dataset, batch_size=4, shuffle=False, num_workers=2, drop_last=True)
+    
+    for images, masks, labels in valid_iter:
+        print(images.shape)
+        print(masks.shape)
+        print(labels.shape)
