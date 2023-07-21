@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 from utils import *
 from multiLoss import *
 from dice_score import *
+from torch.optim import Adam
 
 def train(model: UNet, 
           device: torch.device, 
@@ -40,28 +41,28 @@ def train(model: UNet,
     return
 
 @torch.no_grad()
-def test(model: UNet, 
+def eval(model: UNet, 
          device: torch.device, 
-         test_loader: DataLoader,
+         valid_loader: DataLoader,
          criterion: torch.nn.Module):
     '''
-    testing the accuracy of current partly-trained model and print
+    evaluate the accuracy of current partly-trained model and print
     '''
     total_loss = 0
-    for batch_idx, data in enumerate(test_loader, 0):
+    for batch_idx, data in enumerate(valid_loader, 0):
         images, targets, labels = data
         images, targets, labels = images.to(device), targets.to(device), labels.to(device)
         outputs = model(images)
         outputs = F.interpolate(F.pad(outputs, (32, 32, 32, 32), value=0), size=(512, 512), mode='bilinear', align_corners=False)
-        total_loss += criterion(outputs[:, 0], targets)
-    print(f'epoch BCE loss: {total_loss / batch_idx}')
+        total_loss += criterion(outputs[:, 0], targets).item()
+    print(f'epoch BCE loss: {total_loss / len(valid_loader)}')
     targets = targets.cpu()
     outputs = outputs.cpu()
     outputs[outputs < 0.5] = 0
     outputs[outputs >= 0.5] = 1
     predict = outputs[:, 0]
     print('epoch dice score: ', 1 - dice_loss(predict, targets).item())
-    return
+    return total_loss / batch_idx
 
 def main():
     batch_size = 16
@@ -78,10 +79,15 @@ def main():
     valid_dataset = TumorDataset(dataset_dir='./dataset', train=False, transform=transform)
     valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=batch_size)
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=1e-5, weight_decay=1e-3)
+    optimizer = Adam(model.parameters(), lr=1e-2, betas=[0.9, 0.999])
+    min_loss = float('inf')
     for epoch in range(num_epoch):
         train(model, device, batch_size, train_loader, optimizer, criterion, epoch)
-        test(model, device, valid_loader, criterion)
+        cur_loss = eval(model, device, valid_loader, criterion)
+        if cur_loss < min_loss:
+            min_loss = cur_loss
+            torch.save(model.state_dict(), "optim_params.pth")
+            print(f"epoch {epoch}: update optimal model parameters")
 
 if __name__ == '__main__':
     main()
