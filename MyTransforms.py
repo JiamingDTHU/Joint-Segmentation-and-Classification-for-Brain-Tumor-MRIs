@@ -59,6 +59,36 @@ def center_crop(arr, dst_shape):
     
     return arr[..., start_row:start_row + dst_shape[-2], start_col:start_col + dst_shape[-1]]
 
+def random_rotation(arr):
+    
+    if len(arr.shape) < 2:
+        raise ValueError("输入数组必须是大于二维的数组")
+    
+    rot_times = np.random.randint(0, 4)
+    return np.rot90(arr, rot_times, (-2, -1))
+
+def random_horizontal_flip(arr):
+    
+    if len(arr.shape) < 2:
+        raise ValueError("输入数组必须是大于二维的数组")
+    
+    flip = np.random.randint(0, 2)
+    if flip:
+        return arr[..., ::-1]
+    else:
+        return arr
+    
+def random_vertical_flip(arr):
+    
+    if len(arr.shape) < 2:
+        raise ValueError("输入数组必须是大于二维的数组")
+    
+    flip = np.random.randint(0, 2)
+    if flip:
+        return arr[..., ::-1, :]
+    else:
+        return arr
+    
 class Rerange:
     def __call__(self, arr):
         
@@ -135,12 +165,27 @@ class CenterCrop:
         start_col = (arr.shape[-1] - self.dst_shape[-1]) // 2
 
         return arr[..., start_row:start_row + self.dst_shape[-2], start_col:start_col + self.dst_shape[-1]]
+    
+class RandomRotation:
+    def __call__(self, arr):
+        return random_rotation(arr)
+    
+class RandomHorizontalFlip:
+    def __call__(self, arr):
+        return random_horizontal_flip(arr)
 
+class RandomVerticalFlip:
+    def __call__(self, arr):
+        return random_vertical_flip(arr)
+    
 if __name__ == "__main__":
     my_transforms = transforms.Compose([Rerange(),
                                      Resize(256),
                                      RandomCrop(224),
                                      CenterCrop(192),
+                                     RandomHorizontalFlip(),
+                                     RandomVerticalFlip(),
+                                     RandomRotation(),
                                      ])
     input_array = np.random.randn(4, 2, 512, 512)
     output_array = my_transforms(input_array)
