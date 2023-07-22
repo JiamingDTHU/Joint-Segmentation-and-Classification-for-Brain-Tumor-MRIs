@@ -28,8 +28,9 @@ def train(model: UNet,
         inputs, targets, labels = inputs.to(device), targets.to(device), labels.to(device)
         optimizer.zero_grad() # set gradient of last epoch to zero
         outputs = model(inputs)
-        outputs = F.interpolate(F.pad(outputs, (32, 32, 32, 32), value=0), size=(512, 512), mode='bilinear', align_corners=False)
-        loss = criterion(outputs[:, 0], targets)
+        outputs = F.interpolate(F.pad(outputs, (16, 16, 16, 16), value=0), size=(512, 512), mode='bilinear', align_corners=False)
+        # outputs = F.interpolate(outputs, size=(512, 512), mode='bilinear', align_corners=False)
+        loss = criterion(outputs[:, 1], targets)
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
         running_loss += loss.item() # sum of total loss
@@ -53,33 +54,40 @@ def eval(model: UNet,
         images, targets, labels = data
         images, targets, labels = images.to(device), targets.to(device), labels.to(device)
         outputs = model(images)
-        outputs = F.interpolate(F.pad(outputs, (32, 32, 32, 32), value=0), size=(512, 512), mode='bilinear', align_corners=False)
-        total_loss += criterion(outputs[:, 0], targets).item()
+        outputs = F.interpolate(F.pad(outputs, (16, 16, 16, 16), value=0), size=(512, 512), mode='bilinear', align_corners=False)
+        # outputs = F.interpolate(outputs, size=(512, 512), mode='bilinear', align_corners=False)
+        total_loss += criterion(outputs[:, 1], targets).item()
     print(f'epoch BCE loss: {total_loss / len(valid_loader)}')
     targets = targets.cpu()
     outputs = outputs.cpu()
     outputs[outputs < 0.5] = 0
     outputs[outputs >= 0.5] = 1
-    predict = outputs[:, 0]
+    predict = outputs[:, 1]
     print('epoch dice score: ', 1 - dice_loss(predict, targets).item())
     return total_loss / batch_idx
 
 def main():
     batch_size = 16
-    num_epoch = 200
+    num_epoch = 10
     model = UNet(1, 2, False)
+    try:
+        model.load_state_dict("optim_params.pth")
+    except:
+        pass
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     transform = transforms.Compose([transforms.Resize(256),
-                                   transforms.CenterCrop(192),
-                                   transforms.ToTensor(),
-                                  ])
+                                    transforms.CenterCrop(224),
+                                    transforms.ToTensor(),
+                                    transforms.Normalize(0.268,
+                                                         0.420),
+                                    ])
     train_dataset = TumorDataset(dataset_dir='./dataset', train=True, transform=transform)
     train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     valid_dataset = TumorDataset(dataset_dir='./dataset', train=False, transform=transform)
     valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=batch_size)
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = Adam(model.parameters(), lr=1e-2, betas=[0.9, 0.999])
+    optimizer = Adam(model.parameters(), lr=1e-3, betas=[0.9, 0.999])
     min_loss = float('inf')
     for epoch in range(num_epoch):
         train(model, device, batch_size, train_loader, optimizer, criterion, epoch)

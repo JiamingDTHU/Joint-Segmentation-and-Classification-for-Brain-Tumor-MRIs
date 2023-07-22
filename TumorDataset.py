@@ -28,7 +28,8 @@ class TumorDataset(Dataset):
         path = os.path.join(self.data_dir, str(self.name_list[idx]))
         file_data = h5py.File(path, "r")
         image = np.array(file_data["cjdata"]["image"])
-        image = Image.fromarray(np.uint8(255 * (image - np.min(image)) / (np.max(image))))
+        image = Image.fromarray(np.uint8(255 * (image - np.min(image)) / (np.max(image) - np.min(image))))
+        # image = 
         mask = np.array(file_data["cjdata"]['tumorMask'])
         label = np.array(file_data["cjdata"]["label"]).item() - 1
         if self.transform:
@@ -46,17 +47,17 @@ class TumorDataset(Dataset):
     
 if __name__ == "__main__":
     transform_train = torchvision.transforms.Compose([
-        torchvision.transforms.Grayscale(num_output_channels=3),
-        torchvision.transforms.RandomResizedCrop(224, scale=(0.08, 1), ratio=(3.0/4.0, 4.0/3.0)),
-        torchvision.transforms.RandomHorizontalFlip(), 
-        torchvision.transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+        # torchvision.transforms.Grayscale(num_output_channels=3),
+        # torchvision.transforms.RandomResizedCrop(224, scale=(0.08, 1), ratio=(3.0/4.0, 4.0/3.0)),
+        # torchvision.transforms.RandomHorizontalFlip(), 
+        # torchvision.transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
         torchvision.transforms.ToTensor(), 
-        torchvision.transforms.Normalize([0.485, 0.456, 0.406],
-                                         [0.229, 0.224, 0.225])
+        # torchvision.transforms.Normalize([0.485, 0.456, 0.406],
+        #                                  [0.229, 0.224, 0.225])
     ])
     transform_valid = torchvision.transforms.Compose([
-        torchvision.transforms.Resize(256), 
-        torchvision.transforms.CenterCrop(224),
+        # torchvision.transforms.Resize(256), 
+        # torchvision.transforms.CenterCrop(224),
         torchvision.transforms.ToTensor(),
         ])
     train_dataset = TumorDataset(dataset_dir="./dataset", train=True, transform=transform_train)
@@ -64,7 +65,31 @@ if __name__ == "__main__":
     train_iter = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=2, drop_last=True)
     valid_iter = DataLoader(valid_dataset, batch_size=4, shuffle=False, num_workers=2, drop_last=True)
     
+    # 计算图像的均值以及方差
+    pixel_value_sum = 0.
+    pixel_value_sum_sq = 0.
+    for images, masks, labels in train_iter:
+        images.requires_grad_(False)
+        pixel_value_sum += torch.sum(images).item()
+    
     for images, masks, labels in valid_iter:
-        print(images.shape)
-        print(masks.shape)
-        print(labels.shape)
+        images.requires_grad_(False)
+        pixel_value_sum += torch.sum(images).item()
+    
+    avg_pixel_value = pixel_value_sum / ((len(train_iter) + len(valid_iter)) * 4 * 512 * 512)
+    print(avg_pixel_value)
+    
+    for images, masks, labels in train_iter:
+        images.requires_grad_(False)
+        pixel_value_sum_sq += torch.sum((images - avg_pixel_value) ** 2).item()
+    
+    for images, masks, labels in valid_iter:
+        images.requires_grad_(False)
+        pixel_value_sum_sq += torch.sum((images - avg_pixel_value) ** 2).item()
+        
+    std_pixel_value = (pixel_value_sum_sq / ((len(train_iter) + len(valid_iter)) * 4 * 512 * 512 - 1) ) ** 0.5
+    print(std_pixel_value)
+    
+        
+    
+    
