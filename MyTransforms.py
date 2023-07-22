@@ -19,7 +19,7 @@ def resize(arr, dst_shape):
     scale_height = dst_shape[-2] / arr.shape[-2]
     scale_width = dst_shape[-1] / arr.shape[-1]
     
-    return zoom(arr, (scale_height, scale_width), order=1)
+    return zoom(arr, (*arr.shape[:-2], scale_height, scale_width), order=1)
 
 def random_crop(arr, dst_shape):
     
@@ -82,11 +82,11 @@ class Resize:
         
         if len(arr.shape) < 2:
             raise ValueError("输入数组必须是大于二维的数组")
-
+        
         scale_height = self.dst_shape[-2] / arr.shape[-2]
         scale_width = self.dst_shape[-1] / arr.shape[-1]
 
-        return zoom(arr, (scale_height, scale_width), order=1)
+        return zoom(arr, (*([1]*(len(arr.shape) - 2)), scale_height, scale_width), order=1)
 
 class RandomCrop:
     def __init__(self, dst_shape):
@@ -142,7 +142,7 @@ if __name__ == "__main__":
                                      RandomCrop(224),
                                      CenterCrop(192),
                                      ])
-    input_array = np.random.randn(512, 512)
+    input_array = np.random.randn(4, 2, 512, 512)
     output_array = my_transforms(input_array)
     print(output_array.shape)
     print(np.max(output_array), np.min(output_array))

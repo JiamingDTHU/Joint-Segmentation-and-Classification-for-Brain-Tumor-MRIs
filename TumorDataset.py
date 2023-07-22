@@ -6,6 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
 import h5py
+from MyTransforms import Rerange, RandomCrop, Resize, CenterCrop
 
 class TumorDataset(Dataset):
     def __init__(self, dataset_dir: str, train: bool = True, transform: transforms = None):
@@ -28,12 +29,13 @@ class TumorDataset(Dataset):
         path = os.path.join(self.data_dir, str(self.name_list[idx]))
         file_data = h5py.File(path, "r")
         image = np.array(file_data["cjdata"]["image"])
-        image = Image.fromarray(np.uint8(255 * (image - np.min(image)) / (np.max(image) - np.min(image))))
+        # image = Image.fromarray(np.uint8(255 * (image - np.min(image)) / (np.max(image) - np.min(image))))
         # image = 
         mask = np.array(file_data["cjdata"]['tumorMask'])
         label = np.array(file_data["cjdata"]["label"]).item() - 1
         if self.transform:
-            image = self.transform(image)
+            transformed = self.transform(np.concatenate((image.reshape(1, *image.shape), mask.reshape(1, *mask.shape)), axis=0))
+            image, mask = transformed[0], transformed[1]
         # image = torch.unsqueeze(image, dim=0)
         # mask = torch.unsqueeze(mask, dim=0)
         
@@ -46,20 +48,30 @@ class TumorDataset(Dataset):
     
     
 if __name__ == "__main__":
-    transform_train = torchvision.transforms.Compose([
-        # torchvision.transforms.Grayscale(num_output_channels=3),
-        # torchvision.transforms.RandomResizedCrop(224, scale=(0.08, 1), ratio=(3.0/4.0, 4.0/3.0)),
-        # torchvision.transforms.RandomHorizontalFlip(), 
-        # torchvision.transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
-        torchvision.transforms.ToTensor(), 
-        # torchvision.transforms.Normalize([0.485, 0.456, 0.406],
-        #                                  [0.229, 0.224, 0.225])
-    ])
-    transform_valid = torchvision.transforms.Compose([
-        # torchvision.transforms.Resize(256), 
-        # torchvision.transforms.CenterCrop(224),
-        torchvision.transforms.ToTensor(),
-        ])
+    # transform_train = torchvision.transforms.Compose([
+    #     # torchvision.transforms.Grayscale(num_output_channels=3),
+    #     # torchvision.transforms.RandomResizedCrop(224, scale=(0.08, 1), ratio=(3.0/4.0, 4.0/3.0)),
+    #     # torchvision.transforms.RandomHorizontalFlip(), 
+    #     # torchvision.transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4),
+    #     torchvision.transforms.ToTensor(), 
+    #     # torchvision.transforms.Normalize([0.485, 0.456, 0.406],
+    #     #                                  [0.229, 0.224, 0.225])
+    # ])
+    # transform_valid = torchvision.transforms.Compose([
+    #     # torchvision.transforms.Resize(256), 
+    #     # torchvision.transforms.CenterCrop(224),
+    #     torchvision.transforms.ToTensor(),
+    #     ])
+    transform_train = transforms.Compose([Rerange(),
+                                    # Resize(256),
+                                    # RandomCrop(224),
+                                    transforms.ToTensor(),
+                                    ])
+    transform_valid = transforms.Compose([Rerange(),
+                                    # Resize(256),
+                                    # CenterCrop(224),
+                                    transforms.ToTensor(),
+                                    ])
     train_dataset = TumorDataset(dataset_dir="./dataset", train=True, transform=transform_train)
     valid_dataset = TumorDataset(dataset_dir="./dataset", train=False, transform=transform_valid)
     train_iter = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=2, drop_last=True)

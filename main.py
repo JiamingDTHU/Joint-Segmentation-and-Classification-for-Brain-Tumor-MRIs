@@ -11,6 +11,7 @@ from utils import *
 from multiLoss import *
 from dice_score import *
 from torch.optim import Adam
+from MyTransforms import Rerange, Resize, RandomCrop, CenterCrop
 
 def train(model: UNet, 
           device: torch.device, 
@@ -72,23 +73,36 @@ def main():
     model = UNet(1, 2, False)
     try:
         model.load_state_dict("optim_params.pth")
+        flag = 1
     except:
-        pass
+        flag = 0
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
-    transform = transforms.Compose([transforms.Resize(256),
-                                    transforms.CenterCrop(224),
+    # transform = transforms.Compose([transforms.Resize(256),
+    #                                 transforms.CenterCrop(224),
+    #                                 transforms.ToTensor(),
+    #                                 transforms.Normalize(0.268,
+    #                                                      0.420),
+    #                                 ])
+    transform_train = transforms.Compose([Rerange(),
+                                    Resize(256),
+                                    RandomCrop(224),
+                                    transforms.RandomHorizontalFlip(),
+                                    transforms.RandomVerticalFlip(),
                                     transforms.ToTensor(),
-                                    transforms.Normalize(0.268,
-                                                         0.420),
                                     ])
-    train_dataset = TumorDataset(dataset_dir='./dataset', train=True, transform=transform)
+    transform_valid = transforms.Compose([Rerange(),
+                                    Resize(256),
+                                    CenterCrop(224),
+                                    transforms.ToTensor(),
+                                    ])
+    train_dataset = TumorDataset(dataset_dir='./dataset', train=True, transform=transform_train)
     train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
-    valid_dataset = TumorDataset(dataset_dir='./dataset', train=False, transform=transform)
+    valid_dataset = TumorDataset(dataset_dir='./dataset', train=False, transform=transform_valid)
     valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=batch_size)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = Adam(model.parameters(), lr=1e-3, betas=[0.9, 0.999])
-    min_loss = float('inf')
+    
     for epoch in range(num_epoch):
         train(model, device, batch_size, train_loader, optimizer, criterion, epoch)
         cur_loss = eval(model, device, valid_loader, criterion)
