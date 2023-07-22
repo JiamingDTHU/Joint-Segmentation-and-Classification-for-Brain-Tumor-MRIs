@@ -11,7 +11,7 @@ from utils import *
 from multiLoss import *
 from dice_score import *
 from torch.optim import Adam
-from MyTransforms import Rerange, Resize, RandomCrop, CenterCrop
+from MyTransforms import Rerange, Resize, RandomCrop, CenterCrop, RandomRotation, RandomHorizontalFlip, RandomVerticalFlip
 
 def train(model: UNet, 
           device: torch.device, 
@@ -87,14 +87,15 @@ def main():
     transform_train = transforms.Compose([Rerange(),
                                     Resize(256),
                                     RandomCrop(224),
-                                    transforms.RandomHorizontalFlip(),
-                                    transforms.RandomVerticalFlip(),
-                                    transforms.ToTensor(),
+                                    RandomHorizontalFlip(),
+                                    RandomVerticalFlip(),
+                                    RandomRotation(),
+                                    # transforms.ToTensor(),
                                     ])
     transform_valid = transforms.Compose([Rerange(),
                                     Resize(256),
                                     CenterCrop(224),
-                                    transforms.ToTensor(),
+                                    # transforms.ToTensor(),
                                     ])
     train_dataset = TumorDataset(dataset_dir='./dataset', train=True, transform=transform_train)
     train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)

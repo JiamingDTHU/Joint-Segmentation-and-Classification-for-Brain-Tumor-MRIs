@@ -65,7 +65,7 @@ def random_rotation(arr):
         raise ValueError("输入数组必须是大于二维的数组")
     
     rot_times = np.random.randint(0, 4)
-    return np.rot90(arr, rot_times, (-2, -1))
+    return np.rot90(arr, rot_times, (-2, -1)).copy()
 
 def random_horizontal_flip(arr):
     
@@ -74,9 +74,9 @@ def random_horizontal_flip(arr):
     
     flip = np.random.randint(0, 2)
     if flip:
-        return arr[..., ::-1]
+        return arr[..., ::-1].copy()
     else:
-        return arr
+        return arr.copy()
     
 def random_vertical_flip(arr):
     
@@ -85,9 +85,9 @@ def random_vertical_flip(arr):
     
     flip = np.random.randint(0, 2)
     if flip:
-        return arr[..., ::-1, :]
+        return arr[..., ::-1, :].copy()
     else:
-        return arr
+        return arr.copy()
     
 class Rerange:
     def __call__(self, arr):
@@ -187,7 +187,12 @@ if __name__ == "__main__":
                                      RandomVerticalFlip(),
                                      RandomRotation(),
                                      ])
-    input_array = np.random.randn(4, 2, 512, 512)
+    # my_transforms = transforms.Compose([Rerange(),
+    #                                  Resize(256),
+    #                                  RandomCrop(224),
+    #                                  CenterCrop(192),])
+    
+    input_array = np.random.randn(2, 512, 512)
     output_array = my_transforms(input_array)
     print(output_array.shape)
     print(np.max(output_array), np.min(output_array))

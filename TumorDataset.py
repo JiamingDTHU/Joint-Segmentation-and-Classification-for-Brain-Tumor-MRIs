@@ -6,7 +6,7 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
 import h5py
-from MyTransforms import Rerange, RandomCrop, Resize, CenterCrop
+from MyTransforms import Rerange, Resize, RandomCrop, CenterCrop, RandomRotation, RandomHorizontalFlip, RandomVerticalFlip
 
 class TumorDataset(Dataset):
     def __init__(self, dataset_dir: str, train: bool = True, transform: transforms = None):
@@ -34,8 +34,11 @@ class TumorDataset(Dataset):
         mask = np.array(file_data["cjdata"]['tumorMask'])
         label = np.array(file_data["cjdata"]["label"]).item() - 1
         if self.transform:
-            transformed = self.transform(np.concatenate((image.reshape(1, *image.shape), mask.reshape(1, *mask.shape)), axis=0))
-            image, mask = transformed[0], transformed[1]
+            concatenated = np.concatenate((image.reshape((1, *image.shape)), mask.reshape((1, *mask.shape))), axis=0)
+            # print(concatenated.shape)
+            transformed = self.transform(concatenated)
+            # print(transformed.shape)
+            image, mask = transformed[0:1, :, :], transformed[1:, :, :]
         # image = torch.unsqueeze(image, dim=0)
         # mask = torch.unsqueeze(mask, dim=0)
         
@@ -63,14 +66,17 @@ if __name__ == "__main__":
     #     torchvision.transforms.ToTensor(),
     #     ])
     transform_train = transforms.Compose([Rerange(),
-                                    # Resize(256),
-                                    # RandomCrop(224),
-                                    transforms.ToTensor(),
+                                    Resize(256),
+                                    RandomCrop(224),
+                                    RandomHorizontalFlip(),
+                                    RandomVerticalFlip(),
+                                    RandomRotation(),
+                                    # transforms.ToTensor(),
                                     ])
     transform_valid = transforms.Compose([Rerange(),
-                                    # Resize(256),
-                                    # CenterCrop(224),
-                                    transforms.ToTensor(),
+                                    Resize(256),
+                                    CenterCrop(224),
+                                    # transforms.ToTensor(),
                                     ])
     train_dataset = TumorDataset(dataset_dir="./dataset", train=True, transform=transform_train)
     valid_dataset = TumorDataset(dataset_dir="./dataset", train=False, transform=transform_valid)
@@ -83,13 +89,14 @@ if __name__ == "__main__":
     for images, masks, labels in train_iter:
         images.requires_grad_(False)
         pixel_value_sum += torch.sum(images).item()
+        print(images.shape, masks.shape)
     
     for images, masks, labels in valid_iter:
         images.requires_grad_(False)
         pixel_value_sum += torch.sum(images).item()
     
     avg_pixel_value = pixel_value_sum / ((len(train_iter) + len(valid_iter)) * 4 * 512 * 512)
-    print(avg_pixel_value)
+    # print(avg_pixel_value)
     
     for images, masks, labels in train_iter:
         images.requires_grad_(False)
@@ -100,7 +107,7 @@ if __name__ == "__main__":
         pixel_value_sum_sq += torch.sum((images - avg_pixel_value) ** 2).item()
         
     std_pixel_value = (pixel_value_sum_sq / ((len(train_iter) + len(valid_iter)) * 4 * 512 * 512 - 1) ) ** 0.5
-    print(std_pixel_value)
+    # print(std_pixel_value)
     
         
     
