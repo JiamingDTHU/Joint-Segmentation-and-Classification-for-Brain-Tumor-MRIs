@@ -29,10 +29,11 @@ def train(model: UNet,
         inputs, targets, labels = inputs.to(device), targets.to(device), labels.to(device)
         optimizer.zero_grad() # set gradient of last epoch to zero
         outputs = model(inputs)
-        print(outputs.shape)
-        outputs = F.interpolate(F.pad(outputs, (16, 16, 16, 16), value=0), size=(512, 512), mode='bilinear', align_corners=False)
+        # print(outputs.shape)
+        # outputs = F.interpolate(F.pad(outputs, (16, 16, 16, 16), value=0), size=(512, 512), mode='bilinear', align_corners=False)
         # outputs = F.interpolate(outputs, size=(512, 512), mode='bilinear', align_corners=False)
-        loss = criterion(outputs[:, 1], targets)
+        # print(targets.shape)
+        loss = criterion(outputs[:, 1, :, :], targets[:, 0, :, :])
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
         running_loss += loss.item() # sum of total loss
@@ -56,27 +57,27 @@ def eval(model: UNet,
         images, targets, labels = data
         images, targets, labels = images.to(device), targets.to(device), labels.to(device)
         outputs = model(images)
-        outputs = F.interpolate(F.pad(outputs, (16, 16, 16, 16), value=0), size=(512, 512), mode='bilinear', align_corners=False)
+        # outputs = F.interpolate(F.pad(outputs, (16, 16, 16, 16), value=0), size=(512, 512), mode='bilinear', align_corners=False)
         # outputs = F.interpolate(outputs, size=(512, 512), mode='bilinear', align_corners=False)
-        total_loss += criterion(outputs[:, 1], targets).item()
+        total_loss += criterion(outputs[:, 1, :, :], targets[:, 0, :, :]).item()
     print(f'epoch BCE loss: {total_loss / len(valid_loader)}')
-    targets = targets.cpu()
+    targets = targets.cpu()[:, 0, :, :]
     outputs = outputs.cpu()
     outputs[outputs < 0.5] = 0
     outputs[outputs >= 0.5] = 1
-    predict = outputs[:, 1]
+    predict = outputs[:, 1, :, :]
     print('epoch dice score: ', 1 - dice_loss(predict, targets).item())
     return total_loss / batch_idx
 
 def main():
     batch_size = 16
-    num_epoch = 10
+    num_epoch = 400
     model = UNet(1, 2, False)
-    try:
-        model.load_state_dict("optim_params.pth")
-        flag = 1
-    except:
-        flag = 0
+    # try:
+    #     model.load_state_dict("optim_params.pth")
+    #     flag = 1
+    # except:
+    #     flag = 0
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     # transform = transforms.Compose([transforms.Resize(256),
@@ -104,7 +105,8 @@ def main():
     valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=batch_size)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = Adam(model.parameters(), lr=1e-3, betas=[0.9, 0.999])
-    
+    # if flag:
+    min_loss = float("inf")
     for epoch in range(num_epoch):
         train(model, device, batch_size, train_loader, optimizer, criterion, epoch)
         cur_loss = eval(model, device, valid_loader, criterion)
