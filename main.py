@@ -29,6 +29,7 @@ def train(model: UNet,
         inputs, targets, labels = inputs.to(device), targets.to(device), labels.to(device)
         optimizer.zero_grad() # set gradient of last epoch to zero
         outputs = model(inputs)
+        print(outputs.shape)
         outputs = F.interpolate(F.pad(outputs, (16, 16, 16, 16), value=0), size=(512, 512), mode='bilinear', align_corners=False)
         # outputs = F.interpolate(outputs, size=(512, 512), mode='bilinear', align_corners=False)
         loss = criterion(outputs[:, 1], targets)
