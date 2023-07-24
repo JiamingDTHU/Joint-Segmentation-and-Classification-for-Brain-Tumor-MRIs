@@ -19,6 +19,7 @@ def train(model: UNet,
     '''
     one epoch training process, containing: forwarding, calculating loss value, back propagation, printing some of the training progress
     '''
+    total_loss = 0.
     running_loss = 0.
     for batch_idx, data in enumerate(train_loader, 0):
         inputs, targets, labels = data
@@ -29,36 +30,39 @@ def train(model: UNet,
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
         running_loss += loss.item() # sum of total loss
+        total_loss += loss.item()
         log_times = 5
         log_interval = len(train_loader) // log_times
         if batch_idx % log_interval == 0:
-            print('epoch: {}; num_batches: {}; loss {}'.format(epoch, batch_idx, running_loss / (log_interval if batch_idx else 1)))
+            print('epoch: {}; num_batches: [{} | {}]; loss {}'.format(epoch, batch_idx, len(train_loader), running_loss / (log_interval if batch_idx else 1)))
             running_loss = 0.
-    return
+    print(f'epoch: {epoch}; train loss: {total_loss / len(train_loader)}')
+    return total_loss / len(train_loader)
 
 @torch.no_grad()
 def eval(model: UNet, 
          device: torch.device, 
          valid_loader: DataLoader,
-         criterion: torch.nn.Module):
+         criterion: torch.nn.Module,
+         epoch: int):
     '''
     evaluate the accuracy of current partly-trained model and print
     '''
-    total_loss = 0
+    total_loss = 0.
     for batch_idx, data in enumerate(valid_loader, 0):
         images, targets, labels = data
         images, targets, labels = images.to(device), targets.to(device), labels.to(device)
         outputs = model(images)
         total_loss += criterion(outputs[:, 1, :, :], targets[:, 0, :, :]).item()
     
-    print(f'epoch BCE loss: {total_loss / len(valid_loader)}')
+    print(f'epoch: {epoch}; validation loss: {total_loss / len(valid_loader)}')
     targets = targets.cpu()[:, 0, :, :]
     outputs = outputs.cpu()
     outputs[outputs < 0.5] = 0
     outputs[outputs >= 0.5] = 1
     predict = outputs[:, 1, :, :]
-    print('epoch dice score: ', 1 - dice_loss(predict, targets).item())
-    return total_loss / batch_idx
+    print('dice score: ', 1 - dice_loss(predict, targets).item())
+    return total_loss / len(valid_loader)
 
 def main():
     batch_size = 4
