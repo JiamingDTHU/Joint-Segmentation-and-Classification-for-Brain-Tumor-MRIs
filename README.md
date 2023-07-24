@@ -40,9 +40,7 @@ Email: chengjun583@qq.com
 - [x] Loss function definition
 - [x] Training and evaluation function definition
 - [x] Main process (training and evaluation)
-- [ ] Train Unet
-- [ ] Trian Edge-Unet
-
+- [x] Train and evaluation
 
 [^01]:Simultaneous Segmentation and Classification of Bone Surfaces from Ultrasound Using a Multi-feature Guided CNN. Wang, P et al
 [^02]:Edge Unet: Braintumor segmentation using MRI based on deep U-Net model with boundary information, Allah, A.M.G et al
