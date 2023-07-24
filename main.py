@@ -61,26 +61,26 @@ def eval(model: UNet,
     return total_loss / batch_idx
 
 def main():
-    batch_size = 16
+    batch_size = 4
     num_epoch = 400
     model = UNet(1, 2, False)
-    try:
-        model.load_state_dict("optim_params.pth")
-    except:
-        print("model parameters will be randomly initialized")
+    # try:
+    #     model.load_state_dict("optim_params.pth")
+    # except:
+    #     print("model parameters will be randomly initialized")
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     
     transform_train = transforms.Compose([Rerange(),
-                                    Resize(256),
-                                    RandomCrop(224),
+                                    # Resize(256),
+                                    # RandomCrop(224),
                                     RandomHorizontalFlip(),
                                     RandomVerticalFlip(),
                                     RandomRotation(),
                                     ])
     transform_valid = transforms.Compose([Rerange(),
-                                    Resize(256),
-                                    CenterCrop(224),
+                                    # Resize(256),
+                                    # CenterCrop(224),
                                     ])
     train_dataset = TumorDataset(dataset_dir='./dataset', train=True, transform=transform_train)
     train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
@@ -91,7 +91,7 @@ def main():
     
     min_loss = float("inf")
     for epoch in range(num_epoch):
-        train(model, device, batch_size, train_loader, optimizer, criterion, epoch)
+        train(model, device, train_loader, optimizer, criterion, epoch)
         cur_loss = eval(model, device, valid_loader, criterion)
         if cur_loss < min_loss:
             min_loss = cur_loss
