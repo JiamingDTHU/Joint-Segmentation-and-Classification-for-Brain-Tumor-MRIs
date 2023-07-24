@@ -95,10 +95,10 @@ def main():
     
     min_loss = float("inf")
     for epoch in range(num_epoch):
-        train(model, device, train_loader, optimizer, criterion, epoch)
-        cur_loss = eval(model, device, valid_loader, criterion)
-        if cur_loss < min_loss:
-            min_loss = cur_loss
+        train_loss = train(model, device, train_loader, optimizer, criterion, epoch)
+        valid_loss = eval(model, device, valid_loader, criterion)
+        if valid_loss < min_loss:
+            min_loss = valid_loss
             torch.save(model.state_dict(), "optim_params.pth")
             print(f"epoch {epoch}: update optimal model parameters")
 
