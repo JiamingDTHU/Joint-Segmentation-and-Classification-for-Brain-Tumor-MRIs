@@ -75,16 +75,14 @@ def main():
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     
-    transform_train = transforms.Compose([Rerange(),
-                                    # Resize(256),
-                                    # RandomCrop(224),
+    transform_train = transforms.Compose([Resize(256),
+                                    RandomCrop(224),
                                     RandomHorizontalFlip(),
                                     RandomVerticalFlip(),
                                     RandomRotation(),
                                     ])
-    transform_valid = transforms.Compose([Rerange(),
-                                    # Resize(256),
-                                    # CenterCrop(224),
+    transform_valid = transforms.Compose([Resize(256),
+                                    CenterCrop(224),
                                     ])
     train_dataset = TumorDataset(dataset_dir='./dataset', train=True, transform=transform_train)
     train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
