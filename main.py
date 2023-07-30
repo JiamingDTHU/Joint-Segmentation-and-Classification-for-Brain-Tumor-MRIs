@@ -27,7 +27,7 @@ def train(model: UNet,
         inputs, targets, labels = inputs.to(device), targets.to(device), labels.to(device)
         optimizer.zero_grad() # set gradient of last epoch to zero
         outputs = model(inputs)
-        loss = criterion(outputs[:, 1, :, :], targets[:, 0, :, :])
+        loss = criterion(outputs[:, 0, :, :], targets[:, 0, :, :])
         loss.backward() # backward the gradient
         optimizer.step() # update parameters
         running_loss += loss.item() # sum of total loss
@@ -37,7 +37,7 @@ def train(model: UNet,
         if batch_idx % log_interval == 0:
             print('epoch: {}; num_batches: [{} | {}]; loss {}'.format(epoch, batch_idx, len(train_loader), running_loss / (log_interval if batch_idx else 1) / batch_size))
             running_loss = 0.
-    print(f'epoch: {epoch}; train loss: {total_loss / len(train_loader) / batch_size}')
+    print(f'epoch: {epoch}; training loss: {total_loss / len(train_loader) / batch_size}')
     return total_loss / len(train_loader) / batch_size
 
 @torch.no_grad()
@@ -57,20 +57,20 @@ def eval(model: UNet,
         images, targets, labels = data
         images, targets, labels = images.to(device), targets.to(device), labels.to(device)
         outputs = model(images)
-        total_loss += criterion(outputs[:, 1, :, :], targets[:, 0, :, :]).item()
+        total_loss += criterion(outputs[:, 0, :, :], targets[:, 0, :, :]).item()
         # calculate dice score
-        images = images.cpu()[:, 0, :, :]
-        targets = targets.cpu()[:, 0, :, :]
-        outputs = outputs.cpu()
-        outputs[outputs < 0.5] = 0
-        outputs[outputs >= 0.5] = 1
-        predicts = outputs[:, 1, :, :]
-        total_dice_score += 1 - dice_loss(predicts, targets).item()
+        images_ = images.cpu()[:, 0, :, :]
+        targets_ = targets.cpu()[:, 0, :, :]
+        outputs_ = outputs.cpu()
+        outputs_[outputs_ < 0.5] = 0.
+        outputs_[outputs_ >= 0.5] = 1.
+        predicts = outputs_[:, 0, :, :]
+        total_dice_score += (1 - dice_loss(predicts, targets_).item())
         if batch_idx == 0:
             toPIL = transforms.ToPILImage()
             for i in range(4):
-                sample_image = toPIL(images[i])
-                sample_mask = toPIL(targets[i])
+                sample_image = toPIL(images_[i])
+                sample_mask = toPIL(targets_[i])
                 sample_prediction = toPIL(predicts[i])
                 sample_image.save(f"sample image {i + 1}.jpg")
                 sample_mask.save(f"sample mask {i + 1}.jpg")
@@ -81,12 +81,12 @@ def eval(model: UNet,
     return total_loss / len(valid_loader) / batch_size
 
 def main():
-    batch_size = 64
-    num_epoch = 5
-    lr = 0.6
+    batch_size = 32
+    num_epoch = 1
+    lr = 0.01
     model = UNet(1, 2, False)
     if os.path.exists("optim_params.pth"):
-        model.load_state_dict("optim_params.pth")
+        model.load_state_dict(torch.load("optim_params.pth"))
         print("=> Model loaded from 'optim_params.pth'")
     else:
         print("=> The model whill be randomly initialized")
