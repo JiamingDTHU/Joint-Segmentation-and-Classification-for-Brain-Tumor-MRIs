@@ -77,12 +77,7 @@ def eval(model: UNet,
                 sample_prediction.save(f"sample prediction {i + 1}.jpg")
     
     print(f'epoch: {epoch}; validation loss: {total_loss / len(valid_loader) / batch_size}')
-    targets = targets.cpu()[:, 0, :, :]
-    outputs = outputs.cpu()
-    outputs[outputs < 0.5] = 0
-    outputs[outputs >= 0.5] = 1
-    predicts = outputs[:, 1, :, :]
-    print('dice score: ', 1 - dice_loss(predicts, targets).item())
+    print('dice score: ', total_dice_score / len(valid_loader) / batch_size)
     return total_loss / len(valid_loader) / batch_size
 
 def main():
