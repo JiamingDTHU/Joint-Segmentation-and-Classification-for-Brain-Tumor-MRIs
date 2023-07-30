@@ -29,6 +29,7 @@ class TumorDataset(Dataset):
         path = os.path.join(self.data_dir, str(self.name_list[idx]))
         file_data = h5py.File(path, "r")
         image = np.array(file_data["cjdata"]["image"])
+        image = (image - np.min(image)) / (np.max(image)- np.min(image))
         mask = np.array(file_data["cjdata"]['tumorMask'])
         label = np.array(file_data["cjdata"]["label"]).item() - 1
         if self.transform:
@@ -59,18 +60,14 @@ if __name__ == "__main__":
     #     # torchvision.transforms.CenterCrop(224),
     #     torchvision.transforms.ToTensor(),
     #     ])
-    transform_train = transforms.Compose([Rerange(),
-                                    Resize(256),
+    transform_train = transforms.Compose([Resize(256),
                                     RandomCrop(224),
                                     RandomHorizontalFlip(),
                                     RandomVerticalFlip(),
                                     RandomRotation(),
-                                    # transforms.ToTensor(),
                                     ])
-    transform_valid = transforms.Compose([Rerange(),
-                                    Resize(256),
+    transform_valid = transforms.Compose([Resize(256),
                                     CenterCrop(224),
-                                    # transforms.ToTensor(),
                                     ])
     train_dataset = TumorDataset(dataset_dir="./dataset", train=True, transform=transform_train)
     valid_dataset = TumorDataset(dataset_dir="./dataset", train=False, transform=transform_valid)
