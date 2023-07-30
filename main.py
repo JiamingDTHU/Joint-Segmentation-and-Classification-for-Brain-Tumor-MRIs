@@ -65,13 +65,14 @@ def eval(model: UNet,
     return total_loss / len(valid_loader)
 
 def main():
-    batch_size = 4
-    num_epoch = 400
+    batch_size = 16
+    num_epoch = 100
     model = UNet(1, 2, False)
-    # try:
-    #     model.load_state_dict("optim_params.pth")
-    # except:
-    #     print("model parameters will be randomly initialized")
+    if os.path.exists("optim_params.pth"):
+        model.load_state_dict("optim_params.pth")
+        print("=> Model loaded from 'optim_params.pth'")
+    else:
+        print("=> The model whill be randomly initialized")
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     
@@ -92,9 +93,24 @@ def main():
     optimizer = Adam(model.parameters(), lr=1e-3, betas=[0.9, 0.999])
     
     min_loss = float("inf")
+    epochs = []
+    train_losses = []
+    valid_losses = []
     for epoch in range(num_epoch):
         train_loss = train(model, device, train_loader, optimizer, criterion, epoch)
         valid_loss = eval(model, device, valid_loader, criterion)
+        epochs.append(epoch + 1)
+        train_losses.append(train_loss)
+        valid_losses.append(valid_loss)
+        # plot current losses and save as .jpg file
+        plt.plot(epochs, train_losses, label='Training')
+        plt.plot(epochs, valid_losses, label='Validation')
+        plt.title('Loss curve')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+        plt.grid(True)
+        plt.savefig("loss_plot.png")
         if valid_loss < min_loss:
             min_loss = valid_loss
             torch.save(model.state_dict(), "optim_params.pth")
