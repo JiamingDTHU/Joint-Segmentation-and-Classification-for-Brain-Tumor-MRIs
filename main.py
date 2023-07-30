@@ -15,7 +15,8 @@ def train(model: UNet,
           train_loader: DataLoader, 
           optimizer: torch.optim.Optimizer, 
           criterion: torch.nn.Module, 
-          epoch: int):
+          epoch: int,
+          batch_size: int):
     '''
     one epoch training process, containing: forwarding, calculating loss value, back propagation, printing some of the training progress
     '''
@@ -34,39 +35,60 @@ def train(model: UNet,
         log_times = 5
         log_interval = len(train_loader) // log_times
         if batch_idx % log_interval == 0:
-            print('epoch: {}; num_batches: [{} | {}]; loss {}'.format(epoch, batch_idx, len(train_loader), running_loss / (log_interval if batch_idx else 1)))
+            print('epoch: {}; num_batches: [{} | {}]; loss {}'.format(epoch, batch_idx, len(train_loader), running_loss / (log_interval if batch_idx else 1) / batch_size))
             running_loss = 0.
-    print(f'epoch: {epoch}; train loss: {total_loss / len(train_loader)}')
-    return total_loss / len(train_loader)
+    print(f'epoch: {epoch}; train loss: {total_loss / len(train_loader) / batch_size}')
+    return total_loss / len(train_loader) / batch_size
 
 @torch.no_grad()
 def eval(model: UNet, 
          device: torch.device, 
          valid_loader: DataLoader,
          criterion: torch.nn.Module,
-         epoch: int):
+         epoch: int,
+         batch_size):
     '''
     evaluate the accuracy of current partly-trained model and print
     '''
     total_loss = 0.
+    total_dice_score = 0.
     for batch_idx, data in enumerate(valid_loader, 0):
+        # calculate BCE loss
         images, targets, labels = data
         images, targets, labels = images.to(device), targets.to(device), labels.to(device)
         outputs = model(images)
         total_loss += criterion(outputs[:, 1, :, :], targets[:, 0, :, :]).item()
+        # calculate dice score
+        images = images.cpu()[:, 0, :, :]
+        targets = targets.cpu()[:, 0, :, :]
+        outputs = outputs.cpu()
+        outputs[outputs < 0.5] = 0
+        outputs[outputs >= 0.5] = 1
+        predicts = outputs[:, 1, :, :]
+        total_dice_score += 1 - dice_loss(predicts, targets).item()
+        if batch_idx == 0:
+            toPIL = transforms.ToPILImage()
+            for i in range(4):
+                sample_image = toPIL(images[i])
+                sample_mask = toPIL(targets[i])
+                sample_prediction = toPIL(predicts[i])
+                sample_image.save(f"sample image {i + 1}.jpg")
+                sample_mask.save(f"sample mask {i + 1}.jpg")
+                sample_prediction.save(f"sample prediction {i + 1}.jpg")
     
-    print(f'epoch: {epoch}; validation loss: {total_loss / len(valid_loader)}')
+    print(f'epoch: {epoch}; validation loss: {total_loss / len(valid_loader) / batch_size}')
     targets = targets.cpu()[:, 0, :, :]
     outputs = outputs.cpu()
     outputs[outputs < 0.5] = 0
     outputs[outputs >= 0.5] = 1
-    predict = outputs[:, 1, :, :]
-    print('dice score: ', 1 - dice_loss(predict, targets).item())
-    return total_loss / len(valid_loader)
+    predicts = outputs[:, 1, :, :]
+    print('dice score: ', 1 - dice_loss(predicts, targets).item())
+    return total_loss / len(valid_loader) / batch_size
 
 def main():
-    batch_size = 16
-    num_epoch = 100
+    batch_size = 64
+    num_epoch = 5
+    lr = 0.6
     model = UNet(1, 2, False)
     if os.path.exists("optim_params.pth"):
         model.load_state_dict("optim_params.pth")
@@ -90,16 +112,16 @@ def main():
     valid_dataset = TumorDataset(dataset_dir='./dataset', train=False, transform=transform_valid)
     valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=batch_size)
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = Adam(model.parameters(), lr=1e-3, betas=[0.9, 0.999])
+    optimizer = Adam(model.parameters(), lr=lr)
     
     min_loss = float("inf")
     epochs = []
     train_losses = []
     valid_losses = []
     for epoch in range(num_epoch):
-        train_loss = train(model, device, train_loader, optimizer, criterion, epoch)
-        valid_loss = eval(model, device, valid_loader, criterion)
-        epochs.append(epoch + 1)
+        train_loss = train(model, device, train_loader, optimizer, criterion, epoch, batch_size)
+        valid_loss = eval(model, device, valid_loader, criterion, epoch, batch_size)
+        epochs.append(epoch)
         train_losses.append(train_loss)
         valid_losses.append(valid_loss)
         # plot current losses and save as .jpg file
@@ -108,6 +130,7 @@ def main():
         plt.title('Loss curve')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
+        plt.legend().remove()
         plt.legend()
         plt.grid(True)
         plt.savefig("loss_plot.png")
