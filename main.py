@@ -7,7 +7,7 @@ from torch.utils.data import DataLoader
 from TumorDataset import *
 import matplotlib.pyplot as plt
 from dice_score import *
-from torch.optim import Adam
+from torch.optim import Adam, lr_scheduler
 from MyTransforms import Rerange, Resize, RandomCrop, CenterCrop, RandomRotation, RandomHorizontalFlip, RandomVerticalFlip
 
 def train(model: UNet, 
@@ -82,14 +82,14 @@ def eval(model: UNet,
 
 def main():
     batch_size = 32
-    num_epoch = 1
-    lr = 0.01
+    num_epoch = 200
+    lr = 1e-2
     model = UNet(1, 2, False)
-    if os.path.exists("optim_params.pth"):
-        model.load_state_dict(torch.load("optim_params.pth"))
-        print("=> Model loaded from 'optim_params.pth'")
-    else:
-        print("=> The model whill be randomly initialized")
+    # if os.path.exists("optim_params.pth"):
+    #     model.load_state_dict(torch.load("optim_params.pth"))
+    #     print("=> Model loaded from 'optim_params.pth'")
+    # else:
+    #     print("=> The model will be randomly initialized")
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     
@@ -108,6 +108,7 @@ def main():
     valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=batch_size)
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = Adam(model.parameters(), lr=lr)
+    scheduler = lr_scheduler.StepLR(optimizer, 100, 0.1)
     
     min_loss = float("inf")
     epochs = []
@@ -120,19 +121,20 @@ def main():
         train_losses.append(train_loss)
         valid_losses.append(valid_loss)
         # plot current losses and save as .jpg file
+        plt.clf()
         plt.plot(epochs, train_losses, label='Training')
         plt.plot(epochs, valid_losses, label='Validation')
         plt.title('Loss curve')
         plt.xlabel('Epochs')
         plt.ylabel('Loss')
-        plt.legend().remove()
         plt.legend()
         plt.grid(True)
         plt.savefig("loss_plot.png")
         if valid_loss < min_loss:
             min_loss = valid_loss
-            torch.save(model.state_dict(), "optim_params.pth")
+            # torch.save(model.state_dict(), "optim_params.pth")
             print(f"epoch {epoch}: update optimal model parameters")
+        scheduler.step()
 
 if __name__ == '__main__':
     main()
