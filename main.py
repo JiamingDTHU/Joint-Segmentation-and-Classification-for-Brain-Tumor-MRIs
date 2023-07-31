@@ -61,11 +61,11 @@ def eval(model: UNet,
         # calculate dice score
         images_ = images.cpu()[:, 0, :, :]
         targets_ = targets.cpu()[:, 0, :, :]
-        outputs_ = outputs.cpu()
-        outputs_[outputs_ < 0.5] = 0.
-        outputs_[outputs_ >= 0.5] = 1.
-        predicts = outputs_[:, 0, :, :]
-        total_dice_score += (1 - dice_loss(predicts, targets_).item())
+        outputs_ = outputs.cpu()[:, 0, :, :]
+        predicts = outputs.copy()
+        predicts[outputs_ < 0.5] = 0.
+        predicts[outputs_ >= 0.5] = 1.
+        total_dice_score += (1 - dice_loss(outputs_, targets_).item())
         if batch_idx == 0:
             toPIL = transforms.ToPILImage()
             for i in range(4):
