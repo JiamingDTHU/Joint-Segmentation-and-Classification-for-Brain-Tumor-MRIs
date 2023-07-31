@@ -85,11 +85,17 @@ def main():
     num_epoch = 200
     lr = 1e-2
     model = UNet(1, 2, False)
-    # if os.path.exists("optim_params.pth"):
-    #     model.load_state_dict(torch.load("optim_params.pth"))
-    #     print("=> Model loaded from 'optim_params.pth'")
-    # else:
-    #     print("=> The model will be randomly initialized")
+    optimizer = Adam(model.parameters(), lr=lr)
+    scheduler = lr_scheduler.StepLR(optimizer, 100, 0.1)
+    if os.path.exists("checkpoint.pth"):
+        checkpoint = torch.load("checkpoint.pth")
+        model.load_state_dict(checkpoint["model_state"])
+        optimizer.load_state_dict(checkpoint["optimizer_state"])
+        scheduler.load_state_dict(checkpoint["scheduler_state"])
+        start_epoch = checkpoint["epoch"]
+        print("=> Model loaded from 'checkpoint.pth'")
+    else:
+        print("=> The model will be randomly initialized")
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
     
@@ -107,14 +113,17 @@ def main():
     valid_dataset = TumorDataset(dataset_dir='./dataset', train=False, transform=transform_valid)
     valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=batch_size)
     criterion = torch.nn.CrossEntropyLoss()
-    optimizer = Adam(model.parameters(), lr=lr)
-    scheduler = lr_scheduler.StepLR(optimizer, 100, 0.1)
+
     
     min_loss = float("inf")
+    optim_model_state = model.state_dict()
     epochs = []
     train_losses = []
     valid_losses = []
-    for epoch in range(num_epoch):
+    if start_epoch >= num_epoch:
+        print("Already reached maximum epoch")
+        return
+    for epoch in range(start_epoch, num_epoch):
         train_loss = train(model, device, train_loader, optimizer, criterion, epoch, batch_size)
         valid_loss = eval(model, device, valid_loader, criterion, epoch, batch_size)
         epochs.append(epoch)
@@ -129,12 +138,18 @@ def main():
         plt.ylabel('Loss')
         plt.legend()
         plt.grid(True)
-        plt.savefig("loss_plot.png")
-        if valid_loss < min_loss:
-            min_loss = valid_loss
-            # torch.save(model.state_dict(), "optim_params.pth")
-            print(f"epoch {epoch}: update optimal model parameters")
+        plt.savefig(f"loss_plot_from_epoch_{start_epoch}.png")
+        # if valid_loss < min_loss:
+        #     min_loss = valid_loss
+        #     optim_model_state = model.state_dict()
+        #     print(f"epoch {epoch}: update optimal model state")
         scheduler.step()
+        torch.save({
+            "model_state": model.state_dict(),
+            "optimizer_state": optimizer.state_dict(),
+            "scheduler_state": scheduler.state_dict(),
+            "epoch": epoch,
+        }, "checkpoint.pth")
 
 if __name__ == '__main__':
     main()
