@@ -116,7 +116,7 @@ def main():
 
     
     min_loss = float("inf")
-    optim_model_state = model.state_dict()
+    # optim_model_state = model.state_dict()
     epochs = []
     train_losses = []
     valid_losses = []
@@ -139,10 +139,10 @@ def main():
         plt.legend()
         plt.grid(True)
         plt.savefig(f"loss_plot_from_epoch_{start_epoch}.png")
-        # if valid_loss < min_loss:
-        #     min_loss = valid_loss
-        #     optim_model_state = model.state_dict()
-        #     print(f"epoch {epoch}: update optimal model state")
+        if valid_loss < min_loss:
+            min_loss = valid_loss
+            # optim_model_state = model.state_dict()
+            print(f"epoch {epoch}: update optimal model state")
         scheduler.step()
         torch.save({
             "model_state": model.state_dict(),
