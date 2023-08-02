@@ -77,26 +77,31 @@ def eval(model: UNet,
                 sample_prediction.save(f"sample prediction {i + 1}.jpg")
     
     print(f'epoch: {epoch}; validation loss: {total_loss / len(valid_loader) / batch_size}')
-    print('mIoU: ', total_iou / len(valid_loader) / batch_size)
+    print(f'epoch: {epoch}; mIoU: ', total_iou / len(valid_loader) / batch_size)
     return total_loss / len(valid_loader) / batch_size
 
 def main():
     batch_size = 16
-    num_epoch = 10
-    lr = 1e-3
+    num_epoch = 200
+    lr = 1e-4
+    wd = 1e-3
     model = UNet(1, 2, False)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
-    optimizer = Adam(model.parameters(), lr=lr)
+    optimizer = Adam(model.parameters(), lr=lr, wd=wd)
     scheduler = lr_scheduler.StepLR(optimizer, 100, 0.1)
     if os.path.exists("checkpoint.pth"):
         checkpoint = torch.load("checkpoint.pth")
         model.load_state_dict(checkpoint["model_state"])
+        best_model_state = checkpoint["best_model_state"]
         optimizer.load_state_dict(checkpoint["optimizer_state"])
         scheduler.load_state_dict(checkpoint["scheduler_state"])
         start_epoch = checkpoint["epoch"] + 1
+        min_loss = checkpoint["min_loss"]
         print("=> Model loaded from 'checkpoint.pth'")
     else:
+        min_loss = float("inf")
+        best_model_state = model.state_dict()
         start_epoch = 0
         print("=> The model will be randomly initialized")
 
@@ -117,9 +122,6 @@ def main():
     # criterion = torch.nn.CrossEntropyLoss()
     criterion = dice_loss
 
-    
-    min_loss = float("inf")
-    # optim_model_state = model.state_dict()
     epochs = []
     train_losses = []
     valid_losses = []
@@ -144,11 +146,13 @@ def main():
         plt.savefig(f"loss_plot_from_epoch_{start_epoch}.png")
         if valid_loss < min_loss:
             min_loss = valid_loss
-            # optim_model_state = model.state_dict()
-            print(f"epoch {epoch}: update optimal model state")
+            best_model_state = model.state_dict()
+            print(f"epoch {epoch}: update best model state")
         scheduler.step()
         torch.save({
             "model_state": model.state_dict(),
+            "best_model_state": best_model_state,
+            "min_loss": min_loss,
             "optimizer_state": optimizer.state_dict(),
             "scheduler_state": scheduler.state_dict(),
             "epoch": epoch,
