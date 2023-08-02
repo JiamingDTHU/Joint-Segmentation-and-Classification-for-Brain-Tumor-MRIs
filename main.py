@@ -35,7 +35,7 @@ def train(model: UNet,
         log_times = 5
         log_interval = len(train_loader) // log_times
         if batch_idx % log_interval == 0:
-            print('epoch: {}; num_batches: [{} | {}]; loss {}'.format(epoch, batch_idx, len(train_loader), running_loss / (log_interval if batch_idx else 1) / batch_size))
+            print('epoch: {}; num_batches: [{} | {}]; dice loss {}'.format(epoch, batch_idx, len(train_loader), running_loss / (log_interval if batch_idx else 1) / batch_size))
             running_loss = 0.
     print(f'epoch: {epoch}; training loss: {total_loss / len(train_loader) / batch_size}')
     return total_loss / len(train_loader) / batch_size
@@ -51,21 +51,21 @@ def eval(model: UNet,
     evaluate the accuracy of current partly-trained model and print
     '''
     total_loss = 0.
-    total_dice_score = 0.
+    total_iou = 0.
     for batch_idx, data in enumerate(valid_loader, 0):
-        # calculate BCE loss
+        # calculate dice loss
         images, targets, labels = data
         images, targets, labels = images.to(device), targets.to(device), labels.to(device)
         outputs = model(images)
         total_loss += criterion(outputs[:, 0, :, :], targets[:, 0, :, :]).item()
-        # calculate dice score
+        # calculate mean intersection over union
         images_ = images.cpu()[:, 0, :, :]
         targets_ = targets.cpu()[:, 0, :, :]
         outputs_ = outputs.cpu()[:, 0, :, :]
-        predicts = outputs.copy()
+        predicts = outputs_.clone()
         predicts[outputs_ < 0.5] = 0.
         predicts[outputs_ >= 0.5] = 1.
-        total_dice_score += (1 - dice_loss(outputs_, targets_).item())
+        total_iou += ((torch.sum(outputs_ * targets_) + 1e-6) / (torch.sum(outputs_) + torch.sum(targets_) - torch.sum(outputs_ * targets_) + 1e-6)).item()
         if batch_idx == 0:
             toPIL = transforms.ToPILImage()
             for i in range(4):
@@ -77,14 +77,16 @@ def eval(model: UNet,
                 sample_prediction.save(f"sample prediction {i + 1}.jpg")
     
     print(f'epoch: {epoch}; validation loss: {total_loss / len(valid_loader) / batch_size}')
-    print('dice score: ', total_dice_score / len(valid_loader) / batch_size)
+    print('mIoU: ', total_iou / len(valid_loader) / batch_size)
     return total_loss / len(valid_loader) / batch_size
 
 def main():
-    batch_size = 32
-    num_epoch = 200
-    lr = 1e-2
+    batch_size = 16
+    num_epoch = 10
+    lr = 1e-3
     model = UNet(1, 2, False)
+    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
     optimizer = Adam(model.parameters(), lr=lr)
     scheduler = lr_scheduler.StepLR(optimizer, 100, 0.1)
     if os.path.exists("checkpoint.pth"):
@@ -92,12 +94,12 @@ def main():
         model.load_state_dict(checkpoint["model_state"])
         optimizer.load_state_dict(checkpoint["optimizer_state"])
         scheduler.load_state_dict(checkpoint["scheduler_state"])
-        start_epoch = checkpoint["epoch"]
+        start_epoch = checkpoint["epoch"] + 1
         print("=> Model loaded from 'checkpoint.pth'")
     else:
+        start_epoch = 0
         print("=> The model will be randomly initialized")
-    device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
-    model.to(device)
+
     
     transform_train = transforms.Compose([Resize(256),
                                     RandomCrop(224),
@@ -112,7 +114,8 @@ def main():
     train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
     valid_dataset = TumorDataset(dataset_dir='./dataset', train=False, transform=transform_valid)
     valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=batch_size)
-    criterion = torch.nn.CrossEntropyLoss()
+    # criterion = torch.nn.CrossEntropyLoss()
+    criterion = dice_loss
 
     
     min_loss = float("inf")
