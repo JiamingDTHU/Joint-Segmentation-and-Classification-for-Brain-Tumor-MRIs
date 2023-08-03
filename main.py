@@ -35,9 +35,9 @@ def train(model: UNet,
         log_times = 5
         log_interval = len(train_loader) // log_times
         if batch_idx % log_interval == 0:
-            print('epoch: {}; num_batches: [{} | {}]; dice loss {}'.format(epoch, batch_idx, len(train_loader), running_loss / (log_interval if batch_idx else 1) / batch_size))
+            print('epoch {}: num_batches: [{} | {}] dice loss {}'.format(epoch, batch_idx, len(train_loader), running_loss / (log_interval if batch_idx else 1) / batch_size))
             running_loss = 0.
-    print(f'epoch: {epoch}; training loss: {total_loss / len(train_loader) / batch_size}')
+    print(f'epoch {epoch}: training loss: {total_loss / len(train_loader) / batch_size}')
     return total_loss / len(train_loader) / batch_size
 
 @torch.no_grad()
@@ -76,19 +76,19 @@ def eval(model: UNet,
                 sample_mask.save(f"sample mask {i + 1}.jpg")
                 sample_prediction.save(f"sample prediction {i + 1}.jpg")
     
-    print(f'epoch: {epoch}; validation loss: {total_loss / len(valid_loader) / batch_size}')
-    print(f'epoch: {epoch}; mIoU: ', total_iou / len(valid_loader) / batch_size)
+    print(f'epoch {epoch}: validation loss: {total_loss / len(valid_loader) / batch_size}')
+    print(f'epoch {epoch}: mIoU: ', total_iou / len(valid_loader) / batch_size)
     return total_loss / len(valid_loader) / batch_size
 
 def main():
     batch_size = 16
-    num_epoch = 200
+    num_epoch = 50
     lr = 1e-4
     wd = 1e-3
     model = UNet(1, 2, False)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
-    optimizer = Adam(model.parameters(), lr=lr, wd=wd)
+    optimizer = Adam(model.parameters(), lr=lr, weight_decay=wd, amsgrad=True)
     scheduler = lr_scheduler.StepLR(optimizer, 100, 0.1)
     if os.path.exists("checkpoint.pth"):
         checkpoint = torch.load("checkpoint.pth")

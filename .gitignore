@@ -8,7 +8,7 @@ __pycache__/
 
 # C extensions
 *.so
-
+brain_tumor_mri_dataset.zip
 # Distribution / packaging
 .Python
 build/
