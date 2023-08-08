@@ -78,7 +78,7 @@ if __name__ == "__main__":
     test_dataset = TumorDataset(dataset_dir="./dataset", mode="test", transform=transform_valid)
     train_iter = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=2, drop_last=True)
     valid_iter = DataLoader(valid_dataset, batch_size=4, shuffle=False, num_workers=2, drop_last=True)
-    valid_iter = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=2, drop_last=True)
+    test_iter = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=2, drop_last=True)
     
     
         
