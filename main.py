@@ -124,7 +124,7 @@ def main(mode):
     else:
         if os.path.exists("checkpoint.pth"):
             checkpoint = torch.load("checkpoint.pth")
-            model.load_state_dict(checkpoint["best_model_state"])
+            model.load_state_dict(checkpoint["model_state"])
             print("=> Model loaded from 'checkpoint.pth'")
         else:
             raise RuntimeError("checkpoint file 'checkpint.pth' do not exist, check your work directory.")
