@@ -65,7 +65,8 @@ def eval(model: UNet,
         predicts = outputs_.clone()
         predicts[outputs_ < 0.5] = 0.
         predicts[outputs_ >= 0.5] = 1.
-        total_iou += ((torch.sum(outputs_ * targets_) + 1e-6) / (torch.sum(outputs_) + torch.sum(targets_) - torch.sum(outputs_ * targets_) + 1e-6)).item()
+        # total_iou += ((torch.sum(outputs_ * targets_) + 1e-6) / (torch.sum(outputs_) + torch.sum(targets_) - torch.sum(outputs_ * targets_) + 1e-6)).item()
+        total_iou += ((torch.sum(predicts * targets_) + 1e-6) / (torch.sum(predicts) + torch.sum(targets_) - torch.sum(predicts * targets_) + 1e-6)).item()
         if batch_idx == 0:
             toPIL = transforms.ToPILImage()
             for i in range(4):
@@ -82,12 +83,13 @@ def eval(model: UNet,
 
 def main():
     batch_size = 16
-    num_epoch = 50
+    num_epoch = 400
     lr = 1e-4
     wd = 1e-3
     model = UNet(1, 2, False)
     device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
     model.to(device)
+    # model = torch.nn.DataParallel(model, device_ids=[0, 1, 2, 3])
     optimizer = Adam(model.parameters(), lr=lr, weight_decay=wd, amsgrad=True)
     scheduler = lr_scheduler.StepLR(optimizer, 100, 0.1)
     if os.path.exists("checkpoint.pth"):
@@ -115,9 +117,9 @@ def main():
     transform_valid = transforms.Compose([Resize(256),
                                     CenterCrop(224),
                                     ])
-    train_dataset = TumorDataset(dataset_dir='./dataset', train=True, transform=transform_train)
+    train_dataset = TumorDataset(dataset_dir='./dataset', mode="train", transform=transform_train)
     train_loader = DataLoader(train_dataset, shuffle=True, batch_size=batch_size)
-    valid_dataset = TumorDataset(dataset_dir='./dataset', train=False, transform=transform_valid)
+    valid_dataset = TumorDataset(dataset_dir='./dataset', mode="valid", transform=transform_valid)
     valid_loader = DataLoader(valid_dataset, shuffle=False, batch_size=batch_size)
     # criterion = torch.nn.CrossEntropyLoss()
     criterion = dice_loss

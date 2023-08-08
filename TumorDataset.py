@@ -9,11 +9,15 @@ import h5py
 from MyTransforms import Rerange, Resize, RandomCrop, CenterCrop, RandomRotation, RandomHorizontalFlip, RandomVerticalFlip
 
 class TumorDataset(Dataset):
-    def __init__(self, dataset_dir: str, train: bool = True, transform: transforms = None):
-        if train:
+    def __init__(self, dataset_dir: str, mode: str, transform: transforms = None):
+        if mode == "train":
             self.data_dir = os.path.join(dataset_dir, "train")
-        else:
+        elif mode == "validation" or mode == "valid":
             self.data_dir = os.path.join(dataset_dir, "valid")
+        elif mode == "test" or mode == "evaluation":
+            self.data_dir = os.path.join(dataset_dir, "test")
+        else:
+            raise ValueError("Dataset init parameter must in { 'train', 'validation/valid', 'test/evaluation' }")
         self.transform = transform
         self.name_list = os.listdir(self.data_dir)
         if ".DS_Store" in self.name_list:
@@ -69,10 +73,12 @@ if __name__ == "__main__":
     transform_valid = transforms.Compose([Resize(256),
                                     CenterCrop(224),
                                     ])
-    train_dataset = TumorDataset(dataset_dir="./dataset", train=True, transform=transform_train)
-    valid_dataset = TumorDataset(dataset_dir="./dataset", train=False, transform=transform_valid)
+    train_dataset = TumorDataset(dataset_dir="./dataset", mode="train", transform=transform_train)
+    valid_dataset = TumorDataset(dataset_dir="./dataset", mode="valid", transform=transform_valid)
+    test_dataset = TumorDataset(dataset_dir="./dataset", mode="test", transform=transform_valid)
     train_iter = DataLoader(train_dataset, batch_size=4, shuffle=True, num_workers=2, drop_last=True)
     valid_iter = DataLoader(valid_dataset, batch_size=4, shuffle=False, num_workers=2, drop_last=True)
+    valid_iter = DataLoader(test_dataset, batch_size=4, shuffle=False, num_workers=2, drop_last=True)
     
     
         
